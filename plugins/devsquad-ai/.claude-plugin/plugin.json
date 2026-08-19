@@ -1,0 +1,10 @@
+{
+  "name": "devsquad-ai",
+  "description": "Equipo de agentes SDLC (Orquestador, BSA, Arquitecto, Coder) que guía proyectos full-stack desde la idea hasta el código, adaptándose al nivel técnico de quien lo usa.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Omar"
+  },
+  "keywords": ["sdlc", "agentes", "full-stack", "supabase", "vercel"],
+  "category": "development"
+}

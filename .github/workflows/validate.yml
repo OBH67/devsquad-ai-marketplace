@@ -1,0 +1,47 @@
+name: Validar plugin DevSquad AI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validar JSON
+        run: |
+          for f in $(find . -name "*.json" -not -path "*/node_modules/*"); do
+            node -e "JSON.parse(require('fs').readFileSync('$f','utf8')); console.log('OK: $f')"
+          done
+
+      - name: Instalar pyyaml
+        run: pip install pyyaml --break-system-packages
+
+      - name: Validar frontmatter YAML de agentes y skills
+        run: |
+          python3 - << 'EOF'
+          import glob, yaml, sys
+
+          ok = True
+          for f in glob.glob("plugins/**/agents/*.md", recursive=True) + \
+                    glob.glob("plugins/**/skills/**/SKILL.md", recursive=True):
+              content = open(f, encoding="utf-8").read()
+              if not content.startswith("---\n"):
+                  print(f"FALTA frontmatter: {f}")
+                  ok = False
+                  continue
+              end = content.index("\n---", 4)
+              fm = content[4:end]
+              try:
+                  yaml.safe_load(fm)
+                  print(f"OK: {f}")
+              except yaml.YAMLError as e:
+                  print(f"YAML INVALIDO en {f}: {e}")
+                  ok = False
+
+          sys.exit(0 if ok else 1)
+          EOF

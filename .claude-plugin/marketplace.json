@@ -1,0 +1,14 @@
+{
+  "name": "devsquad-ai-marketplace",
+  "owner": {
+    "name": "Omar"
+  },
+  "description": "Marketplace privado de DevSquad AI — equipo de agentes SDLC para Claude Code.",
+  "plugins": [
+    {
+      "name": "devsquad-ai",
+      "source": "./plugins/devsquad-ai",
+      "description": "Equipo de agentes SDLC (Orquestador, BSA, Arquitecto, Coder) para proyectos full-stack sobre Supabase + Vercel."
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+# Node
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Estado de proyectos generado por DevSquad AI (no se versiona por defecto)
+.devsquad/
