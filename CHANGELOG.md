@@ -1,5 +1,66 @@
 # Changelog
 
+## [0.4.0] — Soporte de stack declarado y archivos protegidos
+
+> Nota de versionado: esta entrada se pidió como `[0.2.0]`, pero ese número
+> ya existe más abajo (["Aprendizajes de la primera prueba real
+> end-to-end"](#020--aprendizajes-de-la-primera-prueba-real-end-to-end)) y
+> la última versión publicada es `0.3.0`. Se numeró como `0.4.0` para no
+> duplicar historial. El título es el solicitado.
+
+Cierra tres huecos detectados al exponer DevSquad AI a un caso que el diseño
+original no contemplaba: una persona técnica que ya llega con su propio
+stack decidido (ej. Python + Ollama local, sin nube) y con código terminado
+que no debe regenerarse.
+
+### Agregado
+- **Pregunta de stack en la inicialización** (`iniciar-proyecto`): ahora se
+  pregunta si el stack ya está decidido o si lo propone el Arquitecto. Si ya
+  está decidido, la persona lo describe en sus palabras (lenguaje,
+  frameworks, dónde corre, restricciones duras como "sin APIs de pago" o
+  "todo local") y se guarda tal cual, sin traducirlo ni completarlo.
+- **Pregunta de archivos protegidos en la inicialización**: se pregunta si
+  hay código o archivos ya terminados que no deben regenerarse, con ejemplos
+  para quien no entienda la pregunta, y se guardan como lista de rutas o
+  patrones.
+- Ambas preguntas son **independientes del nivel técnico**: alguien técnico
+  puede querer igual que le propongan el stack, y alguien no técnico puede
+  traer una restricción real de su empresa.
+- `.devsquad/perfil.md` ahora incluye dos campos nuevos: **Stack** y
+  **Archivos protegidos**.
+- El skill de inicialización debe **confirmar en una frase lo que entendió**
+  de cada uno de esos dos campos antes de continuar — no interpretar en
+  silencio y avanzar.
+- Nueva sección **"Archivos protegidos"** en el Coder: antes de escribir o
+  modificar cualquier archivo, revisa esa lista del perfil; si hay
+  coincidencia, se detiene y pregunta explícitamente en vez de editar o
+  regenerar por su cuenta, aunque crea que lo está mejorando.
+
+### Cambiado
+- **El Arquitecto ya no tiene un stack por defecto hardcodeado.** Ahora
+  sigue una jerarquía de decisión: (1) si `.devsquad/perfil.md` declara un
+  stack, ese stack es autoritativo y no se cuestiona ni se ofrecen
+  alternativas por cuenta propia; (2) si no hay stack declarado, el
+  Arquitecto propone, y Next.js + Supabase + Vercel sigue siendo un default
+  razonable pero debe justificarse según los requerimientos, no aplicarse
+  automáticamente. La regla de transparencia de costo/impacto no cambia y
+  aplica en ambos casos.
+- **El "Límite de alcance" del Arquitecto ahora se mide por complejidad
+  operativa, no por tipo de proyecto.** Antes excluía todo lo que no fuera
+  "funcionalidad básica de tipo ERP/CRM". Ahora el dominio es libre (un
+  pipeline local de agentes de IA, una herramienta de datos, un CLI o un ERP
+  simple son igual de válidos) y lo que queda fuera es la orquestación
+  distribuida a escala productiva (Kubernetes multi-nodo, service mesh,
+  colas de mensajería de alto volumen). El archivo incluye un ejemplo de
+  cada lado.
+- **El Orquestador ahora pasa el contexto de "Stack" y "Archivos
+  protegidos"** explícitamente al delegar en arquitecto o coder, en vez de
+  asumir que el subagente los va a leer por su cuenta — mismo principio que
+  ya aplicaba al resto del perfil, porque cada subagente arranca sin memoria
+  de la conversación.
+- `README.md`: la descripción del Arquitecto ya no implica un default
+  incondicional de Next.js + Supabase + Vercel.
+
 ## [0.3.0] — Experiencia de usuario y skills especializadas
 
 ### Agregado

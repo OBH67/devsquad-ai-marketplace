@@ -6,9 +6,14 @@ Incluye 4 agentes:
 
 - **Orquestador** (Opus) — director de proyecto, punto de entrada único.
 - **BSA** (Sonnet) — traduce tu idea en requerimientos claros.
-- **Arquitecto** (Opus) — define el stack y la arquitectura, siempre
-  explicando costo e impacto de cada decisión.
-- **Coder** (Sonnet) — implementa el código siguiendo lo ya definido.
+- **Arquitecto** (Opus) — define la arquitectura, siempre explicando costo e
+  impacto de cada decisión. Sobre el stack sigue una jerarquía: si tú ya
+  declaraste uno al configurar tu perfil, ese stack manda y el Arquitecto
+  diseña sobre él sin cuestionarlo; si no declaraste ninguno, él lo propone
+  y lo justifica según tus requerimientos.
+- **Coder** (Sonnet) — implementa el código siguiendo lo ya definido, y se
+  detiene a preguntar antes de tocar cualquier archivo que hayas marcado
+  como protegido.
 
 ## Instalación
 
@@ -41,6 +46,18 @@ nivel técnico, tu idioma preferido). Esto es para que todos los agentes se
 adapten a cómo te gusta trabajar — no necesitas saber nada técnico para
 responder estas preguntas.
 
+También te va a preguntar dos cosas sobre el proyecto, sin importar tu nivel
+técnico:
+
+- **Si el stack ya está decidido** o prefieres que el Arquitecto lo
+  proponga. Si ya lo tienes, descríbelo con tus palabras (lenguaje,
+  frameworks, dónde corre, y restricciones duras como "todo local" o "sin
+  APIs de pago") y el equipo se ajusta a eso.
+- **Si hay código o archivos ya terminados** que no deben regenerarse (por
+  ejemplo, un runtime que ya depuraste o un archivo de configuración que ya
+  funciona). Quedan marcados como protegidos y ningún agente los toca sin
+  preguntarte primero.
+
 Después de eso, simplemente cuéntale tu idea de proyecto como se la
 contarías a una persona. El Orquestador se encarga de coordinar al resto del
 equipo.
@@ -65,7 +82,8 @@ de prueba busca descubrir.
 DevSquad AI crea una carpeta `.devsquad/` dentro de tu proyecto (no se
 versiona por defecto — ver `.gitignore`) con:
 
-- `perfil.md` — tu perfil (nivel técnico, idioma, preferencias).
+- `perfil.md` — tu perfil (nivel técnico, idioma, preferencias, stack
+  declarado y archivos protegidos).
 - `requerimientos.md` — lo que definió el BSA.
 - `arquitectura.md` — lo que definió el Arquitecto.
 - `estado.md` — en qué va el proyecto y qué falta.

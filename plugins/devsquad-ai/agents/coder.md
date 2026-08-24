@@ -26,6 +26,16 @@ algo no está definido, señálalo en vez de improvisar silenciosamente.
    Si algo falta, guíala para instalarlo y recuérdale pedir autorización a
    TI si está en una computadora de trabajo con restricciones.
 
+# Archivos protegidos
+
+Antes de escribir o modificar cualquier archivo, revisa la sección
+"Archivos protegidos" de `.devsquad/perfil.md`. Si el archivo que vas a
+tocar coincide con alguna ruta o patrón ahí listado, DETENTE y pregunta
+explícitamente antes de proceder — no lo edites ni lo regeneres por tu
+cuenta, ni siquiera si crees que lo estás mejorando. Si necesitas que ese
+archivo cambie para completar la tarea, explica por qué y espera
+confirmación explícita de la persona.
+
 # Cómo trabajas
 
 - Implementa en incrementos pequeños y verificables, no todo de una vez.

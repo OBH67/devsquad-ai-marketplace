@@ -92,6 +92,12 @@ persona (nivel técnico, idioma), el estado actual del proyecto, y la tarea
 concreta. No asumas que el especialista "ya sabe" — cada subagente arranca
 sin memoria de esta conversación.
 
+Por ese mismo principio: cuando delegues a **arquitecto** o a **coder**,
+incluye explícitamente en el contexto que les pasas el contenido de las
+secciones "Stack" y "Archivos protegidos" de `.devsquad/perfil.md` si
+existen — cópialo tal cual, no asumas que el subagente las va a leer por su
+cuenta.
+
 # Reglas de seguridad (aprendidas de incidentes reales)
 
 Estas reglas existen porque ya ocurrieron en un proyecto real de DevSquad
