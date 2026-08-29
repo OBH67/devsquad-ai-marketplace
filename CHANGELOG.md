@@ -1,5 +1,58 @@
 # Changelog
 
+## [0.5.0] — Estándares técnicos reales de arquitectura, backend y frontend
+
+> Nota de mantenimiento: `plugin.json` se había quedado en `0.3.0` aunque
+> el CHANGELOG ya documentaba `0.4.0`. Se corrige aquí a `0.5.0` para que
+> vuelva a reflejar la última versión publicada.
+
+Profundiza la parte técnica de Arquitecto, Coder y Diseñador con
+estándares de la industria, sin convertirlos en checklists que abrumen a
+un POC pequeño ni a una persona no técnica — todo pasa por el marco de
+costo/impacto ya existente.
+
+### Agregado
+- **Skill `estandares-backend`** (Coder): principios SOLID, Clean
+  Architecture y separación en capas, diseño de APIs (códigos HTTP,
+  OpenAPI/Swagger), autenticación (OAuth2/JWT), validación y control de
+  acceso, pruebas automatizadas (unitarias/integración/e2e), CI/CD,
+  rendimiento (índices, rate limiting) y observabilidad. Incluye una
+  **rúbrica cuantificable de calidad de código** (100 puntos: correctitud,
+  seguridad, SOLID, pruebas, legibilidad) con un umbral mínimo de 80/100
+  para considerar un incremento "terminado" — responde directamente al
+  pedido de poder calificar objetivamente si un código está bien hecho.
+- **Skill `estandares-frontend`** (Diseñador y Coder): accesibilidad
+  (WCAG: HTML semántico, ARIA, navegación por teclado), diseño responsivo
+  con breakpoints, sistemas de diseño con Atomic Design, jerarquía visual
+  y feedback de interacción, rendimiento de frontend, y leyes de UX (Ley
+  de Hick, Ley de Fitts).
+- **Skill `arquitectura-tecnica` ampliada** (Arquitecto): definición de
+  atributos no funcionales (ANF), análisis de compromisos estilo ATAM
+  aplicado de forma proporcional (nombrar el trade-off, no un proceso
+  formal completo), patrones de arquitectura y descomposición modular, y
+  estándares de calidad de referencia (ISO/IEC 25010, ISO/IEC 5055, CMMI,
+  IEEE 730) — estos últimos marcados explícitamente como opcionales según
+  el tamaño del proyecto, nunca obligatorios por defecto.
+- El Arquitecto ahora documenta explícitamente en `arquitectura.md` los
+  atributos no funcionales objetivo, el patrón de arquitectura elegido, y
+  el compromiso de calidad de cada decisión no obvia.
+- El Diseñador ahora define también breakpoints responsivos, agrupa
+  componentes con Atomic Design, y aplica las leyes de UX al definir
+  layout — todo documentado en `diseno.md`.
+- El Coder ahora tiene la herramienta **WebSearch**: antes de aplicar un
+  patrón o convención, verifica si sigue siendo la práctica recomendada en
+  la versión actual del lenguaje/framework/librería en uso, en vez de
+  confiar solo en lo que sabe de memoria.
+
+### Cambiado
+- El Coder ahora usa `estandares-backend` y/o `estandares-frontend` según
+  la capa que esté tocando, además de la skill general
+  `implementacion-calidad` (que queda como la capa transversal: secretos,
+  incrementos pequeños, manejo de errores).
+- `diseno-ui` ahora se referencia junto con `estandares-frontend` en vez
+  de duplicar accesibilidad/responsividad/Atomic Design — `diseno-ui` se
+  queda enfocada en paleta, tipografía, contraste y estados.
+
 ## [0.4.0] — Soporte de stack declarado y archivos protegidos
 
 > Nota de versionado: esta entrada se pidió como `[0.2.0]`, pero ese número

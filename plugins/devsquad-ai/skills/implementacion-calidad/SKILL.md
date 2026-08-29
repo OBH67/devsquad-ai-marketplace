@@ -1,5 +1,5 @@
 ---
-description: Estándares de calidad, seguridad y buenas prácticas de código para la fase de implementación en proyectos DevSquad AI — incrementos pequeños, manejo de errores, validación de entradas, gestión de secretos, y verificación de entorno antes de empezar. Usar siempre al implementar código.
+description: Estándares generales de calidad, seguridad y buenas prácticas de código para la fase de implementación en proyectos DevSquad AI — incrementos pequeños, manejo de errores, validación de entradas, gestión de secretos, y verificación de entorno antes de empezar. Para el detalle técnico específico de backend o frontend, ver las skills `estandares-backend` y `estandares-frontend`. Usar siempre al implementar código.
 ---
 
 # Calidad de implementación
@@ -21,6 +21,16 @@ obvio que ya deberían estar instaladas.
   real — la validación de cliente nunca es suficiente por sí sola).
 - **Legibilidad antes que "cleverness".** Prioriza código que cualquier
   otro desarrollador (o tú mismo en seis meses) pueda entender rápido.
+
+## Estándares técnicos por capa
+
+Esta skill cubre lo general y transversal. Para el detalle técnico
+específico de la capa que estés tocando, usa además:
+- `estandares-backend`: SOLID, Clean Architecture, diseño de APIs,
+  autenticación, pruebas automatizadas, CI/CD, rendimiento, y la rúbrica
+  cuantificable de calidad de código.
+- `estandares-frontend`: accesibilidad (WCAG), diseño responsivo, Atomic
+  Design, y leyes de UX.
 
 ## Seguridad de secretos (no negociable)
 
@@ -49,3 +59,5 @@ Un incremento no está listo para mostrarse a la persona si:
 - Contiene algo hardcodeado que debería ser una variable de entorno.
 - No se explicó, en una frase simple, qué es lo que la persona debería
   probar.
+- Es trabajo de backend y no alcanza 80/100 en la rúbrica de calidad de
+  `estandares-backend`, o su renglón de seguridad no está completo.

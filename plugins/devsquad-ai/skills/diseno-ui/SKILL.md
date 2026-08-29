@@ -1,5 +1,5 @@
 ---
-description: Checklist y principios de diseño visual con valor real (color, tipografía, layout, contraste) para usar al crear el sistema de diseño de un proyecto DevSquad AI, o al implementar/revisar código que debe seguir ese diseño. Usar siempre al generar diseño.md, y al verificar contraste/legibilidad antes de entregar una app al usuario.
+description: Checklist y principios de diseño visual con valor real (color, tipografía, layout, contraste) para usar al crear el sistema de diseño de un proyecto DevSquad AI, o al implementar/revisar código que debe seguir ese diseño. Para accesibilidad (WCAG), responsividad, Atomic Design y leyes de UX, ver la skill `estandares-frontend`. Usar siempre al generar diseño.md, y al verificar contraste/legibilidad antes de entregar una app al usuario.
 ---
 
 # Diseño UI con valor real (DevSquad AI)
@@ -8,6 +8,11 @@ Un diseño genérico (gris/azul por defecto, tipografía del sistema, sin
 personalidad) no cumple el objetivo de DevSquad AI. El objetivo es que
 cada proyecto se sienta diseñado a propósito para lo que es, no como una
 plantilla sin pensar.
+
+Esta skill cubre paleta, tipografía, contraste y estados. Para
+accesibilidad técnica (WCAG, ARIA, teclado), diseño responsivo, Atomic
+Design y leyes de UX (Hick, Fitts), usa junto con esta la skill
+`estandares-frontend`.
 
 ## Principios no negociables
 
@@ -48,6 +53,8 @@ plantilla sin pensar.
 - [ ] Modo claro/oscuro decidido explícitamente, no dejado a la plantilla
       base.
 - [ ] Cada pantalla del proyecto tiene su estado vacío/error descrito.
+- [ ] Ver también el checklist de accesibilidad y responsividad de
+      `estandares-frontend`.
 
 ## Checklist de verificación antes de entregar al usuario (para Orquestador/Coder)
 

@@ -8,7 +8,8 @@
     {
       "name": "devsquad-ai",
       "source": "./plugins/devsquad-ai",
-      "description": "Equipo de agentes SDLC (Orquestador, BSA, Arquitecto, Coder) para proyectos full-stack sobre Supabase + Vercel."
+      "description": "Equipo de agentes SDLC (Orquestador, BSA, Arquitecto, Diseñador, Coder) que guía proyectos full-stack desde la idea hasta el código, con progreso visible, stack elegido contigo, verificación de tu entorno, y estándares técnicos reales de arquitectura, backend y frontend.",
+      "category": "development"
     }
   ]
 }
