@@ -1,8 +1,8 @@
 # DevSquad AI
 
-Equipo de agentes SDLC para Claude Code — Fase 1 (prototipo interno).
+Equipo de agentes SDLC para Claude Code.
 
-Incluye 4 agentes:
+Incluye 5 agentes:
 
 - **Orquestador** (Opus) — director de proyecto, punto de entrada único.
 - **BSA** (Sonnet) — traduce tu idea en requerimientos claros.
@@ -11,6 +11,9 @@ Incluye 4 agentes:
   declaraste uno al configurar tu perfil, ese stack manda y el Arquitecto
   diseña sobre él sin cuestionarlo; si no declaraste ninguno, él lo propone
   y lo justifica según tus requerimientos.
+- **Diseñador** (Opus) — define paleta, tipografía, layout, accesibilidad y
+  responsividad antes de que se escriba código, para que nadie improvise
+  el diseño visual mientras programa.
 - **Coder** (Sonnet) — implementa el código siguiendo lo ya definido, y se
   detiene a preguntar antes de tocar cualquier archivo que hayas marcado
   como protegido.
@@ -62,12 +65,31 @@ Después de eso, simplemente cuéntale tu idea de proyecto como se la
 contarías a una persona. El Orquestador se encarga de coordinar al resto del
 equipo.
 
-## Qué esperar en esta Fase 1
+## Cómo iniciar un proyecto nuevo, separado del anterior (importante)
+
+Una sesión de Claude Code queda anclada a la carpeta donde la abriste — no
+cambia de proyecto solo porque le digas "empecemos algo nuevo" en el chat,
+porque no puede moverse de carpeta por su cuenta.
+
+Si quieres un proyecto totalmente aparte del que ya tienes en curso:
+
+1. Crea (o ubica) la carpeta nueva en tu explorador de archivos.
+2. Abre una terminal **dentro de esa carpeta nueva** (no reuses la ventana
+   donde ya estabas trabajando en el otro proyecto).
+3. Corre `claude` ahí para iniciar una sesión nueva.
+
+Si en vez de eso sigues escribiéndole en la misma conversación de antes, el
+Orquestador va a seguir viendo el estado de tu proyecto anterior — y, si
+detecta que lo que le describes no coincide con ese proyecto, te va a
+avisar explícitamente en qué carpeta está parado para que puedas corregirlo,
+en vez de mezclar los dos proyectos.
+
+## Qué esperar en esta versión
 
 Esta versión cubre: descubrimiento de requerimientos (BSA), diseño de
-arquitectura con transparencia de costos (Arquitecto), e implementación
-(Coder). Todavía **no** incluye (llegan en fases siguientes — ver
-`CHANGELOG.md`):
+arquitectura con transparencia de costos (Arquitecto), sistema de diseño
+(Diseñador), e implementación con estándares técnicos de backend y
+frontend (Coder). Todavía **no** incluye (ver `CHANGELOG.md`):
 
 - Reviewer, Cybersecurity, QA y Deployment como agentes separados.
 - Sistema de hand-off de sesión más robusto.
@@ -86,6 +108,7 @@ versiona por defecto — ver `.gitignore`) con:
   declarado y archivos protegidos).
 - `requerimientos.md` — lo que definió el BSA.
 - `arquitectura.md` — lo que definió el Arquitecto.
+- `diseno.md` — lo que definió el Diseñador.
 - `estado.md` — en qué va el proyecto y qué falta.
 
 No necesitas tocar estos archivos manualmente; el equipo de agentes los lee

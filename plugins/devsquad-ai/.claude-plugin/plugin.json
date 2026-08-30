@@ -1,7 +1,7 @@
 {
   "name": "devsquad-ai",
-  "description": "Equipo de agentes SDLC (Orquestador, BSA, Arquitecto, Diseñador, Coder) que guía proyectos full-stack desde la idea hasta el código, con progreso visible, stack elegido contigo, verificación de tu entorno, y estándares técnicos reales de arquitectura, backend y frontend.",
-  "version": "0.5.0",
+  "description": "Equipo de agentes SDLC (Orquestador, BSA, Arquitecto, Diseñador, Coder) que guía proyectos full-stack desde la idea hasta el código, con progreso visible, stack elegido contigo, verificación de tu entorno y de la carpeta de trabajo, y estándares técnicos reales de arquitectura, backend y frontend.",
+  "version": "0.5.1",
   "author": {
     "name": "Omar"
   },

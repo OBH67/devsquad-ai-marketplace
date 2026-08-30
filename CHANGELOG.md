@@ -1,5 +1,32 @@
 # Changelog
 
+## [0.5.1] — Fix: sesión mostraba proyecto de otra carpeta al pedir "proyecto nuevo"
+
+Bug real reportado en uso: alguien creó una carpeta nueva para un proyecto
+distinto, pero la sesión de Claude Code seguía abierta en la carpeta del
+proyecto anterior. El Orquestador leyó y mostró el `.devsquad/estado.md`
+real de ese proyecto anterior (comportamiento técnicamente correcto: la
+sesión sigue apuntando ahí), pero nunca dijo explícitamente que el problema
+era la carpeta, y ofreció opciones (archivar, proyecto nuevo, descartar,
+continuar) que no resuelven una sesión anclada al lugar equivocado.
+
+### Corregido
+- Nueva sección **"Verificación de carpeta de trabajo"** en el Orquestador,
+  que corre antes que cualquier otra cosa, incluso antes de leer
+  `.devsquad/perfil.md`. Si la persona menciona un proyecto nuevo o una
+  carpeta distinta y lo que hay en el `.devsquad/estado.md` de la carpeta
+  actual no coincide, el Orquestador ahora lo dice primero, con la ruta
+  completa de la carpeta en la que está parado, y explica que una sesión de
+  Claude Code no puede cambiar de carpeta por sí sola — hace falta abrir
+  una terminal nueva dentro de la carpeta correcta. Las opciones de cómo
+  proceder solo se ofrecen después de confirmar si fue un error de carpeta
+  o una decisión real.
+- `README.md`: nueva sección **"Cómo iniciar un proyecto nuevo, separado
+  del anterior"** con los pasos correctos (carpeta nueva → terminal nueva
+  dentro de ella → `claude` ahí), y se corrige el conteo de agentes (decía
+  4, ya son 5 desde que se agregó el Diseñador en 0.2.0) y la lista, que no
+  incluía al Diseñador.
+
 ## [0.5.0] — Estándares técnicos reales de arquitectura, backend y frontend
 
 > Nota de mantenimiento: `plugin.json` se había quedado en `0.3.0` aunque
