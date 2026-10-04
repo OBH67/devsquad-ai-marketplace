@@ -14,11 +14,14 @@ if sys.version_info < (3, 8):
     sys.exit(1)
 
 import argparse
+import datetime
+import hashlib
 import json
 import os
 import re
 import subprocess
 import tempfile
+import unicodedata
 
 SCHEMA_VERSION = 1
 DIR_ESTADO = ".devsquad"
@@ -26,7 +29,8 @@ ARCHIVO_ESTADO = "estado.json"
 DIR_TRACKS = "tracks"
 
 ESTADOS = ("borrador", "listo", "en_progreso", "en_revision", "correcciones",
-           "verificado", "cerrado", "bloqueado")
+           "verificado", "cerrado", "bloqueado", "cancelado")
+ESTADOS_FINALES = ("cerrado", "cancelado")
 
 # Transiciones permitidas con `transicion`. `cerrado` solo se alcanza con
 # `cerrar` y `bloqueado` guarda de dónde viene para `desbloquear`.
@@ -49,6 +53,24 @@ CIERRE_CON_GANCHOS = "verificado"
 
 # Ganchos de cierre (opcionales): si el archivo existe debe traer "aprobado": true.
 GANCHOS_CIERRE = ("revision.json", "verificacion.json")
+
+# Política de cierre de cada track (la propone el Arquitecto en arquitectura.md y la
+# aprueba la persona junto con la arquitectura; queda dentro de la huella aprobada):
+#   humano      criterios objetivos + aprobación humana «cierre» ligada al commit exacto.
+#   automatico  el código cierra con criterios objetivos (tareas con commit, revision.json y
+#               verificacion.json aprobados, estado verificado). Exige que exista el
+#               agente revisor (fase C): agents/revisor.md.
+POLITICAS = ("humano", "automatico")
+POLITICA_DEFECTO = "humano"
+
+# Aprobaciones humanas. Solo las fijan código (hooks / la Factory) a partir de una señal
+# humana; los agentes no pueden (compuertas del hook). `fuente` dice de dónde vino.
+APROBABLES = ("arquitectura", "diseno", "cierre", "comandos")
+DOCUMENTOS = {"arquitectura": "arquitectura.md", "diseno": "diseno.md"}
+FUENTES = ("terminal", "factory", "manual")
+APROBACIONES_PARA_LISTO = ("arquitectura", "diseno")
+RAIZ_PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PERFIL = os.path.join(DIR_ESTADO, "perfil.md")
 
 # Migraciones de esquema de estado.json: {version_origen: funcion(dict) -> dict}.
 # Cada función devuelve el estado ya en la versión origen + 1.
@@ -130,7 +152,7 @@ def leer_json(ruta):
 
 def estado_nuevo():
     return {"schema_version": SCHEMA_VERSION, "track_activo": None,
-            "contadores": {"stop_bloqueos": 0}}
+            "contadores": {"stop_bloqueos": 0}, "comandos_aprobados": None}
 
 
 def cargar_estado(raiz):
@@ -238,6 +260,124 @@ def versionado_ignorado(raiz):
     return {0: True, 1: False}.get(r.returncode)
 
 
+# -------------------------------------------------------------- aprobaciones
+
+def ahora_utc():
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def sin_acentos(texto):
+    return "".join(c for c in unicodedata.normalize("NFD", texto) if unicodedata.category(c) != "Mn")
+
+
+def sha256_archivo(ruta):
+    try:
+        with open(ruta, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return None
+
+
+def revisor_disponible():
+    """El agente revisor existe en el plugin (fase C). Se deriva de los archivos, no de una bandera."""
+    return os.path.exists(os.path.join(RAIZ_PLUGIN, "agents", "revisor.md"))
+
+
+def politica_en_documento(texto):
+    """Política de cierre declarada en arquitectura.md («Política de cierre: humano»); humano si no hay."""
+    m = re.search(r"^[\s>*_-]*pol[ií]tica de cierre\s*[*_]*\s*:\s*[*_`]*\s*([A-Za-záéíóúÁÉÍÓÚ]+)",
+                  texto or "", re.IGNORECASE | re.MULTILINE)
+    if not m:
+        return POLITICA_DEFECTO
+    return sin_acentos(m.group(1)).lower()
+
+
+def git_head(raiz):
+    """Hash completo de HEAD, o None si no hay Git/commits."""
+    try:
+        r = subprocess.run(["git", "-C", raiz, "rev-parse", "HEAD"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                           universal_newlines=True)
+    except OSError:
+        return None
+    return r.stdout.strip() if r.returncode == 0 and r.stdout.strip() else None
+
+
+def perfil_texto(raiz):
+    try:
+        with open(os.path.join(raiz, PERFIL), encoding="utf-8") as f:
+            return f.read()
+    except (OSError, UnicodeDecodeError):
+        return None
+
+
+def comandos_verificacion(texto):
+    """[(etiqueta, comando)] de la sección «Comandos de verificación» del perfil."""
+    comandos, dentro = [], False
+    for linea in (texto or "").split("\n"):
+        if re.match(r"^#{1,6}\s", linea):
+            dentro = sin_acentos(linea).strip().lower().lstrip("# ").startswith("comandos de verificacion")
+            continue
+        if dentro and re.match(r"^\s*[-*]\s", linea):
+            m = re.search(r"`([^`]+)`", linea)
+            if m and not m.group(1).startswith("["):
+                etiqueta = re.sub(r"^\s*[-*]\s*", "", linea.split(":", 1)[0]).strip() if ":" in linea else "comando"
+                comandos.append((etiqueta, m.group(1).strip()))
+    return comandos
+
+
+def huella_comandos(comandos):
+    return hashlib.sha256("\n".join(c for _, c in comandos).encode("utf-8")).hexdigest()
+
+
+def estado_aprobacion(raiz, track, objeto, estado=None):
+    """('ok' | 'falta' | 'obsoleta', detalle) de una aprobación humana."""
+    if objeto == "comandos":
+        reg = (estado if estado is not None else cargar_estado(raiz)).get("comandos_aprobados")
+        if not reg:
+            return "falta", "los comandos de verificación del perfil no están aprobados"
+        actual = huella_comandos(comandos_verificacion(perfil_texto(raiz)))
+        if reg.get("sha256") != actual:
+            return "obsoleta", "los comandos de verificación del perfil cambiaron desde que se aprobaron"
+        return "ok", ""
+    reg = (track.get("aprobaciones") or {}).get(objeto)
+    if not reg:
+        return "falta", "no hay aprobación de %s" % objeto
+    if objeto == "cierre":
+        if git_head(raiz) != reg.get("commit"):
+            return "obsoleta", "hay commits nuevos desde la aprobación (aprobado en %s)" % str(reg.get("commit"))[:7]
+        return "ok", ""
+    if sha256_archivo(os.path.join(raiz, DIR_ESTADO, DOCUMENTOS[objeto])) != reg.get("sha256"):
+        return "obsoleta", "%s cambió desde que se aprobó" % DOCUMENTOS[objeto]
+    return "ok", ""
+
+
+def comoaprobar(objeto):
+    return ("la persona la da con `/%s:aprobar %s` en la terminal, o con ask_human (kind \"approval\", subject \"%s\") "
+            "en la Factory" % (nombre_plugin(), objeto, objeto))
+
+
+def nombre_plugin():
+    try:
+        with open(os.path.join(RAIZ_PLUGIN, ".claude-plugin", "plugin.json"), encoding="utf-8") as f:
+            return json.load(f)["name"]
+    except (OSError, ValueError, KeyError):
+        return "devsquad-ai"
+
+
+def resumen_aprobaciones(raiz, track, estado=None):
+    """{objeto: 'ok'|'falta'|'obsoleta'} de todas las aprobaciones."""
+    return {o: estado_aprobacion(raiz, track, o, estado)[0] for o in APROBABLES}
+
+
+def faltan_aprobaciones_para_listo(raiz, track):
+    faltas = []
+    for o in APROBACIONES_PARA_LISTO:
+        estado, detalle = estado_aprobacion(raiz, track, o)
+        if estado != "ok":
+            faltas.append("%s (%s; %s)" % (o, detalle, comoaprobar(o)))
+    return faltas
+
+
 # ---------------------------------------------------------------- comandos
 
 def cmd_init(a, raiz):
@@ -282,8 +422,10 @@ def cmd_transicion(a, raiz):
     actual, nuevo = track["estado"], a.estado
     if nuevo == "cerrado":
         raise ReglaError("Un track no se cierra con `transicion`. Siguiente paso: `devsquad-estado cerrar`.")
+    if nuevo == "cancelado":
+        raise ReglaError("Un track no se cancela con `transicion`. Siguiente paso: `devsquad-estado cancelar --motivo ...`.")
     if nuevo == "bloqueado":
-        if actual in ("borrador", "listo", "cerrado", "bloqueado"):
+        if actual in ("borrador", "listo") + ESTADOS_FINALES + ("bloqueado",):
             raise ReglaError("El track %s está en %s y no puede bloquearse." % (track_id, actual))
     elif nuevo not in TRANSICIONES.get(actual, ()):
         permitidas = ", ".join(TRANSICIONES.get(actual, ())) or "ninguna (usa `desbloquear`)"
@@ -293,6 +435,10 @@ def cmd_transicion(a, raiz):
         _, lineas = leer_plan(raiz, track_id)
         if not tareas_del_plan(lineas):
             raise ReglaError("El track %s no puede pasar a `listo` sin tareas en plan.md." % track_id)
+        faltas = faltan_aprobaciones_para_listo(raiz, track)
+        if faltas:
+            raise ReglaError("El track %s no puede pasar a `listo` sin la aprobación humana de arquitectura y diseño. "
+                             "Falta: %s." % (track_id, "; ".join(faltas)))
     if nuevo == "en_revision":
         abiertas = tareas_abiertas(raiz, track_id)
         if abiertas:
@@ -362,10 +508,9 @@ def comprobar_ganchos(raiz, track):
                              "Siguiente paso: corrige los hallazgos y repite la revisión o verificación." % nombre)
 
 
-def cmd_cerrar(a, raiz):
-    estado = cargar_estado(raiz)
-    track_id = resolver_track(raiz, estado, a.track)
-    track = cargar_track(raiz, track_id)
+def verificar_criterios_objetivos(raiz, track):
+    """Criterios que comprueba el código para cerrar un track. Lanza ReglaError con el primero que falle."""
+    track_id = track["id"]
     if track["estado"] not in CIERRE_DESDE:
         raise ReglaError("El track %s está en %s y no puede cerrarse. Se cierra desde: %s."
                          % (track_id, track["estado"], ", ".join(CIERRE_DESDE)))
@@ -379,6 +524,56 @@ def cmd_cerrar(a, raiz):
         raise ReglaError("Hay tareas hechas sin commit registrado (%s). Siguiente paso: `devsquad-estado tarea <id> hecha --commit <sha>`."
                          % ", ".join(sin_commit))
     comprobar_ganchos(raiz, track)
+
+
+def politica_de(track):
+    return track.get("politica_cierre") or POLITICA_DEFECTO
+
+
+def verificar_politica_de_cierre(raiz, track):
+    """Parte de la política: aprobación humana ligada al commit (humano) o revisor + ganchos (automatico)."""
+    track_id, politica = track["id"], politica_de(track)
+    if politica == "automatico":
+        if not revisor_disponible():
+            raise ReglaError("El track %s tiene política de cierre `automatico`, que exige el agente revisor (fase C) y "
+                             "todavía no existe. Siguiente paso: usa `humano`." % track_id)
+        for n in GANCHOS_CIERRE:
+            if not os.path.exists(os.path.join(ruta_track(raiz, track_id), n)):
+                raise ReglaError("Política `automatico`: falta %s en el track %s." % (n, track_id))
+        if track["estado"] != CIERRE_CON_GANCHOS:
+            raise ReglaError("Política `automatico`: el track %s debe estar en %s (está en %s)."
+                             % (track_id, CIERRE_CON_GANCHOS, track["estado"]))
+        return
+    estado, detalle = estado_aprobacion(raiz, track, "cierre")
+    if estado != "ok":
+        raise ReglaError("El track %s cumple los criterios objetivos pero tiene política de cierre `humano` y la aprobación de "
+                         "cierre está %s (%s). Siguiente paso: %s." % (track_id, estado, detalle, comoaprobar("cierre")))
+
+
+def motivo_no_cerrable(raiz, track):
+    """None si el track puede cerrarse ya; si no, el motivo (texto)."""
+    try:
+        verificar_criterios_objetivos(raiz, track)
+        verificar_politica_de_cierre(raiz, track)
+    except ReglaError as e:
+        return str(e)
+    return None
+
+
+def cumple_criterios_objetivos(raiz, track):
+    try:
+        verificar_criterios_objetivos(raiz, track)
+    except ReglaError:
+        return False
+    return True
+
+
+def cmd_cerrar(a, raiz):
+    estado = cargar_estado(raiz)
+    track_id = resolver_track(raiz, estado, a.track)
+    track = cargar_track(raiz, track_id)
+    verificar_criterios_objetivos(raiz, track)
+    verificar_politica_de_cierre(raiz, track)
     track["estado"], track["estado_previo"] = "cerrado", None
     guardar_track(raiz, track)
     if estado.get("track_activo") == track_id:
@@ -389,13 +584,90 @@ def cmd_cerrar(a, raiz):
     return 0
 
 
+def cmd_aprobar(a, raiz):
+    """Registra una aprobación humana. Lo invocan los hooks (señal humana) o la Factory; no los agentes."""
+    estado = cargar_estado(raiz)
+    registro = {"fuente": a.fuente, "por": a.por or "persona", "fecha": ahora_utc()}
+    if a.objeto == "comandos":
+        comandos = comandos_verificacion(perfil_texto(raiz))
+        if not comandos:
+            raise ReglaError("El perfil no declara comandos de verificación (sección «Comandos de verificación»); no hay nada que aprobar.")
+        registro.update({"sha256": huella_comandos(comandos), "comandos": [c for _, c in comandos]})
+        estado["comandos_aprobados"] = registro
+        escribir_json(ruta_estado(raiz), estado)
+        print("Aprobados los comandos de verificación del perfil: %s." % "; ".join(c for _, c in comandos))
+        return 0
+    track_id = resolver_track(raiz, estado, a.track)
+    track = cargar_track(raiz, track_id)
+    if track["estado"] in ESTADOS_FINALES:
+        raise ReglaError("El track %s está %s; no admite aprobaciones." % (track_id, track["estado"]))
+    aviso = ""
+    if a.objeto in DOCUMENTOS:
+        ruta_doc = os.path.join(raiz, DIR_ESTADO, DOCUMENTOS[a.objeto])
+        huella = sha256_archivo(ruta_doc)
+        if huella is None:
+            raise ReglaError("No existe %s/%s: no hay nada que aprobar todavía." % (DIR_ESTADO, DOCUMENTOS[a.objeto]))
+        registro["sha256"] = huella
+        if a.objeto == "arquitectura":
+            with open(ruta_doc, encoding="utf-8") as f:
+                politica = politica_en_documento(f.read())
+            if politica not in POLITICAS:
+                raise ReglaError("La política de cierre %r de arquitectura.md no es válida (usa: %s)." % (politica, ", ".join(POLITICAS)))
+            if politica == "automatico" and not revisor_disponible():
+                raise ReglaError("La política de cierre `automatico` exige el agente revisor (fase C) y todavía no existe. "
+                                 "Siguiente paso: el Arquitecto debe declarar `Política de cierre: humano` en arquitectura.md.")
+            anterior = track.get("politica_cierre")
+            if anterior and anterior != politica:
+                aviso = " ATENCIÓN: la política de cierre cambió de `%s` a `%s`." % (anterior, politica)
+            registro["politica_cierre"] = politica
+            track["politica_cierre"] = politica
+    else:  # cierre
+        if politica_de(track) != "humano":
+            raise ReglaError("El track %s tiene política `%s`: la aprobación de cierre solo aplica a `humano`." % (track_id, politica_de(track)))
+        verificar_criterios_objetivos(raiz, track)
+        head = git_head(raiz)
+        if not head:
+            raise ReglaError("La aprobación de cierre se liga al commit exacto y no hay un repositorio Git con commits en %s." % raiz)
+        registro["commit"] = head
+    track.setdefault("aprobaciones", {})[a.objeto] = registro
+    guardar_track(raiz, track)
+    print("Aprobación de %s registrada para el track %s (fuente: %s, por: %s).%s"
+          % (a.objeto, track_id, registro["fuente"], registro["por"], aviso))
+    return 0
+
+
+def cmd_cancelar(a, raiz):
+    """Cancela un track abierto: pide motivo, libera el lugar único y conserva el historial."""
+    motivo = " ".join((a.motivo or "").split())
+    if len(motivo) < 3:
+        raise ReglaError("Cancelar exige un motivo (--motivo \"...\").")
+    estado = cargar_estado(raiz)
+    track_id = resolver_track(raiz, estado, a.track)
+    track = cargar_track(raiz, track_id)
+    if track["estado"] in ESTADOS_FINALES:
+        raise ReglaError("El track %s ya está %s." % (track_id, track["estado"]))
+    track["cancelacion"] = {"motivo": motivo, "estado_previo": track["estado"], "fuente": a.fuente,
+                            "por": a.por or "persona", "fecha": ahora_utc()}
+    track["estado"], track["estado_previo"] = "cancelado", None
+    guardar_track(raiz, track)
+    if estado.get("track_activo") == track_id:
+        estado["track_activo"] = None
+    estado.setdefault("contadores", {})["stop_bloqueos"] = 0
+    escribir_json(ruta_estado(raiz), estado)
+    print("Track %s cancelado (motivo: %s). Se conserva su carpeta como historial." % (track_id, motivo))
+    return 0
+
+
 def resumen(raiz):
     estado = cargar_estado(raiz)
-    datos = {"schema_version": estado["schema_version"], "track_activo": None, "tracks_cerrados": 0}
+    datos = {"schema_version": estado["schema_version"], "track_activo": None, "tracks_cerrados": 0,
+             "tracks_cancelados": 0}
     for t in listar_tracks(raiz):
         track = cargar_track(raiz, t)
         if track["estado"] == "cerrado":
             datos["tracks_cerrados"] += 1
+        if track["estado"] == "cancelado":
+            datos["tracks_cancelados"] += 1
         if t == estado.get("track_activo"):
             _, lineas = leer_plan(raiz, t)
             tareas = tareas_del_plan(lineas)
@@ -434,8 +706,16 @@ def cmd_validar(a, raiz):
                 problemas.append("%s: el `id` de track.json (%r) no coincide con la carpeta." % (t, track.get("id")))
             if track.get("estado") not in ESTADOS:
                 problemas.append("%s: estado desconocido %r." % (t, track.get("estado")))
-            if track.get("estado") != "cerrado":
+            if track.get("estado") not in ESTADOS_FINALES:
                 abiertos.append(t)
+            if track.get("estado") in ("listo", "en_progreso", "en_revision", "correcciones", "verificado"):
+                for o, (st, det) in ((o, estado_aprobacion(raiz, track, o, estado)) for o in APROBACIONES_PARA_LISTO):
+                    if st != "ok":
+                        problemas.append("%s: aprobación de %s %s (%s)." % (t, o, st, det))
+            if track.get("politica_cierre") not in (None,) + POLITICAS:
+                problemas.append("%s: política de cierre desconocida %r." % (t, track.get("politica_cierre")))
+            if track.get("politica_cierre") == "automatico" and not revisor_disponible():
+                problemas.append("%s: política `automatico` sin agente revisor (fase C)." % t)
             _, lineas = leer_plan(raiz, t)
             for _, marca, tid, con_commit in tareas_del_plan(lineas):
                 if marca == "x" and not con_commit:
@@ -445,7 +725,7 @@ def cmd_validar(a, raiz):
     if len(abiertos) > 1:
         problemas.append("Hay %d tracks abiertos (%s) y solo se permite uno." % (len(abiertos), ", ".join(abiertos)))
     if activo and activo not in abiertos:
-        problemas.append("track_activo apunta a %s, que no existe o ya está cerrado." % activo)
+        problemas.append("track_activo apunta a %s, que no existe o ya está cerrado o cancelado." % activo)
     if not activo and abiertos:
         problemas.append("Hay un track abierto (%s) pero estado.json no lo marca como activo." % abiertos[0])
     if versionado_ignorado(raiz):
@@ -490,7 +770,7 @@ def construir_parser():
     c.add_argument("--titulo")
     c.set_defaults(f=cmd_crear)
     t = sub.add_parser("transicion", help="Cambia el estado de un track.")
-    t.add_argument("estado", choices=[e for e in ESTADOS if e != "cerrado"])
+    t.add_argument("estado", choices=[e for e in ESTADOS if e not in ESTADOS_FINALES])
     t.add_argument("--track")
     t.set_defaults(f=cmd_transicion)
     d = sub.add_parser("desbloquear", help="Devuelve un track bloqueado a su estado anterior.")
@@ -505,6 +785,18 @@ def construir_parser():
     z = sub.add_parser("cerrar", help="Cierra el track si sus tareas están completas.")
     z.add_argument("--track")
     z.set_defaults(f=cmd_cerrar)
+    ap = sub.add_parser("aprobar", help="Registra una aprobación humana (lo invocan los hooks o la Factory, no los agentes).")
+    ap.add_argument("objeto", choices=APROBABLES)
+    ap.add_argument("--fuente", choices=FUENTES, default="manual")
+    ap.add_argument("--por")
+    ap.add_argument("--track")
+    ap.set_defaults(f=cmd_aprobar)
+    cn = sub.add_parser("cancelar", help="Cancela un track abierto, con motivo (decisión de la persona).")
+    cn.add_argument("--motivo", required=True)
+    cn.add_argument("--fuente", choices=FUENTES, default="manual")
+    cn.add_argument("--por")
+    cn.add_argument("--track")
+    cn.set_defaults(f=cmd_cancelar)
     e = sub.add_parser("estado", help="Resumen del estado.")
     e.add_argument("--json", action="store_true")
     e.set_defaults(f=cmd_estado)

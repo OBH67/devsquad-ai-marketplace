@@ -1,9 +1,9 @@
 # Changelog
 
-## [Sin publicar] — 0.6.0 en curso (fase A del rediseño)
+## [0.6.0] — 2026-10-04 — Fase A del rediseño: cimientos (estado, compuertas, aprobaciones)
 
-La 0.6.0 se construye en varios pull requests apilados; esta sección se
-completa con cada uno y se cierra con la versión en el último.
+Lo obligatorio pasa a hacerlo cumplir el código, no la memoria del modelo.
+Construida en cinco pull requests apilados (PR 1 a 5, abajo).
 
 ### Cambiado (PR 1: modelos, esfuerzo y herramientas)
 - Modelo y esfuerzo fijados por agente en el frontmatter (`model` y `effort`):
@@ -57,7 +57,8 @@ completa con cada uno y se cierra con la versión en el último.
     no una frontera de seguridad frente a `Bash`.
   - Los hooks avanzan el track con `devsquad-estado`: el BSA lo crea, el
     track pasa a `listo` con los tres entregables y tareas en `plan.md`, el
-    coder lo lleva a `en_revision` con las tareas completas y `Stop` lo cierra.
+    coder lo lleva a `en_revision` con las tareas completas. (`Stop` **no**
+    cierra tracks: ver PR 5.)
 - `devsquad-estado cerrar`: si existe `revision.json` o `verificacion.json`,
   el cierre exige el estado `verificado` (las fases B y C lo endurecen solas).
 - La skill `iniciar-proyecto` pregunta y guarda los comandos de verificación.
@@ -80,21 +81,65 @@ completa con cada uno y se cierra con la versión en el último.
   hooks. El Coder hace un commit por tarea y la marca con
   `devsquad-estado tarea <id> hecha --commit <sha>`.
 
-### Cambiado
+### Cambiado (PR 3)
 - El `plan.md` de un track nuevo ya no trae una tarea de relleno: sin tareas
   reales el track no pasa a `listo`.
 
-### Pendiente (fuera del alcance de este PR)
-- PR 5: comando `devsquad-estado cancelar` (pide motivo, libera el lugar único
-  y conserva el historial).
-- PR 5: huella de los comandos de verificación del perfil, con confirmación de
-  la persona si cambia.
-- El texto del Orquestador y la skill `comunicacion-progreso` siguen pidiendo
-  `TodoWrite`; se reescriben con el recorte del prompt del Orquestador.
-- `preparar-entorno` pide `Bash` al Orquestador, que no lo tiene (decisión:
-  no se le da).
-- Restringir a qué agentes puede delegar el Orquestador (`Agent(...)`): no
-  verificado cómo se nombran los agentes de plugin en esa lista.
+### Agregado (PR 5: aprobaciones humanas, política de cierre y cancelar)
+- **Aprobaciones humanas registradas por código** (`devsquad-estado aprobar
+  arquitectura|diseno|comandos|cierre`):
+  - El track **no pasa a `listo`** hasta que la persona apruebe la arquitectura
+    y el diseño. Cada aprobación guarda fuente (`terminal`/`factory`/`manual`),
+    quién y fecha, más la **huella SHA-256** del documento: si el documento
+    cambia, la aprobación queda **obsoleta**. El coder tampoco arranca con una
+    aprobación obsoleta.
+  - **Terminal**: la persona escribe `/devsquad-ai:aprobar <objeto>`; un hook
+    `UserPromptSubmit` ve el texto tecleado. Las skills `aprobar` y `cancelar`
+    llevan `disable-model-invocation: true` (el modelo no puede invocarlas).
+    **Factory**: la Factory registra la aprobación al recibir la respuesta de
+    `ask_human` (`kind: "approval"`, `subject`); el contrato queda documentado,
+    su implementación es de la Factory.
+  - Los agentes no pueden fabricarlas: compuertas que niegan `Write`/`Edit` sobre
+    `estado.json` y `track.json`, niegan por `Bash` `devsquad-estado aprobar|cancelar`,
+    y el `SubagentStop` del coder detecta cualquier cambio en aprobaciones,
+    política, comandos aprobados o cancelaciones respecto a lo que había al
+    delegarle. (Barandales contra errores del modelo, no una frontera de seguridad.)
+- **Política de cierre por track** (`politica_cierre` en `track.json`): la
+  propone el Arquitecto en `arquitectura.md` (queda dentro de la huella
+  aprobada), por defecto `humano`.
+  - `humano`: criterios objetivos (tareas con commit; si existen
+    `revision.json`/`verificacion.json`, estado `verificado` y aprobados) **más**
+    la aprobación de cierre, ligada al **commit exacto** (`HEAD`) y obsoleta si
+    hay commits nuevos. Al aprobarla, el código cierra el track.
+  - `automatico`: lo cierra el código con los criterios objetivos; **se rechaza
+    mientras no exista el agente revisor** (`agents/revisor.md`, fase C).
+- **`Stop` solo informa** (que el track espera la aprobación de cierre o que ya
+  cumple los criterios, una sola vez); nunca cierra ni bloquea.
+  *Corrige el PR 3, donde `Stop` cerraba el track.* La única vía por la que un
+  hook cierra es la política `automatico`.
+- **`devsquad-estado cancelar --motivo ...`** (o `/devsquad-ai:cancelar`): pide
+  motivo, el track pasa a `cancelado`, queda libre el lugar único y se conserva
+  el historial (`cancelacion` con motivo, estado previo, quién y cuándo).
+- **Huella de los comandos de verificación del perfil**: solo se ejecutan si la
+  persona aprobó su huella actual (`devsquad-estado aprobar comandos`); si
+  cambian, no se ejecutan, el track no avanza y se pide una nueva aprobación.
+- El puntero de arranque muestra las aprobaciones, la política de cierre y el
+  siguiente paso (esperar aprobación, esperar cierre...).
+- Prompts: el Orquestador sabe pedir cada aprobación según el modo (terminal /
+  Factory) y nunca las registra; el Arquitecto declara la política de cierre;
+  `iniciar-proyecto` pide aprobar los comandos.
+- Escenarios de integración (`tests/test_integracion.py`) y CI con una matriz de
+  Python 3.8 a 3.13.
+
+### Límites conocidos de la 0.6.0
+- Las compuertas son **barandales contra errores del modelo, no una frontera de
+  seguridad frente a `Bash`**; el aislamiento real exige el sistema operativo.
+- Requiere `python3` (3.8+); sin él los hooks fallan sin bloquear. Windows sin
+  Python/`sh`: no soportado.
+- La parte de la Factory del contrato `ask_human` (`kind`, `subject`) no está
+  implementada; hasta entonces se puede usar `devsquad-estado aprobar ... --fuente factory`.
+- Quedan pendientes para la fase B: ver `docs/devsquad/pendientes-fase-b.md` en
+  `ai-software-factory`.
 
 ## [0.5.1] — Fix: sesión mostraba proyecto de otra carpeta al pedir "proyecto nuevo"
 

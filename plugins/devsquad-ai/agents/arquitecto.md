@@ -153,6 +153,13 @@ Escribe el resultado en `.devsquad/arquitectura.md` con:
   entorno)
 - **Variables de entorno necesarias**: nombre, para qué sirve, y si es
   secreta o pública
+- **Política de cierre del track**: una línea exacta
+  `**Política de cierre**: humano` (más un motivo breve). `humano` significa que, además
+  de cumplir los criterios objetivos (tareas con commit, pruebas en verde), la persona
+  aprueba el cierre. Es la política por defecto y **la única disponible hoy**:
+  `automatico` solo existirá cuando haya un agente revisor, y el sistema la rechaza
+  mientras no exista. La persona aprueba esta línea junto con la arquitectura, y no
+  se cambia después sin una nueva aprobación.
 - Cualquier cosa marcada como "fuera de alcance" y por qué
 
 # Plan de tareas del track
@@ -176,6 +183,8 @@ bloqueado por las compuertas.
    requerimiento que cubre. Incluye las tareas de pruebas.
 5. Nunca marques una tarea como hecha (`[x]`) ni agregues commits: eso lo
    hace el coder cuando las implementa.
+6. No edites `.devsquad/estado.json` ni `track.json`: los gestiona el sistema (ahí
+   viven las aprobaciones de la persona).
 
 # Al terminar
 

@@ -125,6 +125,12 @@ Lo obligatorio lo hace cumplir el código, no la memoria del modelo
 agentes de este plugin; bloquean con un mensaje que dice el paso que falta:
 
 - **Perfil primero**: sin `.devsquad/perfil.md` no se delega, escribe ni ejecuta.
+- **Aprobación humana** (ver más abajo): el track no pasa a `listo` sin la
+  aprobación de la persona de la arquitectura y del diseño; los comandos de
+  verificación del perfil solo se ejecutan si ella los aprobó; y el cierre se
+  rige por la política de cierre del track.
+- `estado.json` y `track.json` (donde viven las aprobaciones) no los edita el
+  modelo, y `devsquad-estado aprobar|cancelar` no lo ejecutan los agentes.
 - **Orden de fases**: BSA → Arquitecto → Diseñador → Coder (según los
   entregables en `.devsquad/`). Delegar en el coder pasa el track de `listo`
   a `en_progreso`.
@@ -139,7 +145,8 @@ agentes de este plugin; bloquean con un mensaje que dice el paso que falta:
   esté en `.gitignore`), patrones de secretos o archivos protegidos
   modificados. Bloquea con el mismo tope de 3 bloqueos.
 - Al terminar cada agente de planeación o el coder, el hook avanza el track con
-  `devsquad-estado`; al terminar la sesión cierra el track si ya se puede.
+  `devsquad-estado`. **`Stop` solo informa** (por ejemplo «espera la aprobación
+  de cierre»): nunca cierra ni bloquea.
 
 Requieren `python3`; si falta, los hooks fallan sin bloquear (límite conocido).
 
@@ -150,6 +157,42 @@ Requieren `python3`; si falta, los hooks fallan sin bloquear (límite conocido).
 > formato desconocido, un comando que reescribe el historial de Git, etc.).
 > Para aislar de verdad al agente hace falta aislamiento del sistema operativo
 > (usuario sin privilegios, sin credenciales a su alcance), no hooks.
+
+### Aprobaciones humanas, política de cierre y cancelar
+
+Lo que decide la persona solo lo registra el **código** (los hooks o la
+Factory), nunca el modelo:
+
+| Qué | Cómo la da la persona (terminal) | En la Factory |
+|---|---|---|
+| Arquitectura | `/devsquad-ai:aprobar arquitectura` | `ask_human` con `kind: "approval"`, `subject: "arquitectura"` |
+| Diseño | `/devsquad-ai:aprobar diseno` | `subject: "diseno"` |
+| Comandos de verificación del perfil | `/devsquad-ai:aprobar comandos` | `subject: "comandos"` |
+| Cierre del track | `/devsquad-ai:aprobar cierre` | `subject: "cierre"` |
+| Cancelar un track | `/devsquad-ai:cancelar <motivo>` | `ask_human` con `kind: "cancel"` |
+
+En la terminal un hook `UserPromptSubmit` ve el texto que la persona teclea (el
+modelo no puede producirlo; las skills `aprobar` y `cancelar` no son invocables
+por el modelo). En la Factory, la Factory ejecuta
+`devsquad-estado aprobar <objeto> --fuente factory --por <usuario>` al recibir
+la respuesta (el contrato de `ask_human` se implementa en la Factory).
+
+- Las aprobaciones de arquitectura y diseño llevan la **huella SHA-256** del
+  documento: si cambia, la aprobación queda **obsoleta**. La de comandos, la
+  huella de la lista de comandos. La de cierre, el **commit exacto** (`HEAD`):
+  commits nuevos la vuelven obsoleta.
+- **Política de cierre** de cada track (`track.json`, `politica_cierre`): la
+  propone el Arquitecto en `arquitectura.md` (`**Política de cierre**: humano`),
+  la aprueba la persona con la arquitectura y queda dentro de la huella
+  aprobada; el modelo no puede cambiarla.
+  - `humano` (por defecto): criterios objetivos (tareas con commit y, si
+    existen `revision.json`/`verificacion.json`, estado `verificado` y
+    aprobados) **más** la aprobación de cierre. Al aprobarla, el código cierra.
+  - `automatico`: el código cierra solo con los criterios objetivos.
+    **Se rechaza mientras no exista el agente revisor** (fase C).
+- `devsquad-estado cancelar --motivo ...` (o `/devsquad-ai:cancelar`): el track
+  pasa a `cancelado`, queda libre el lugar único y se conserva el historial
+  (`cancelacion` con motivo, estado previo, quién y cuándo).
 
 ### Arranque atómico y memoria
 
@@ -169,7 +212,7 @@ Requieren `python3`; si falta, los hooks fallan sin bloquear (límite conocido).
 ### Script `devsquad-estado`
 
 Cambia y valida ese estado: `devsquad-estado init | crear | transicion |
-tarea | cerrar | estado | validar | migrar` (`--help` para el detalle). Es un
+tarea | aprobar | cancelar | cerrar | estado | validar | migrar` (`--help` para el detalle). Es un
 script de Python 3.8+ sin dependencias; el plugin lo pone en el `PATH` de la
 herramienta Bash. **Límite conocido:** necesita `python3` (y `sh`); sin ellos,
 por ejemplo en Windows sin Python, falla con un mensaje claro.

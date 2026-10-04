@@ -61,11 +61,25 @@ class Base(unittest.TestCase):
         self.git("commit", "-q", "-m", "inicial")
         return self.git("rev-parse", "HEAD")
 
+    def aprobar_planeacion(self):
+        """Arquitectura y diseño aprobados por la persona (requisito para `listo`)."""
+        self.escribir(("arquitectura.md",), "# Arquitectura\n\nPolítica de cierre: humano\n")
+        self.escribir(("diseno.md",), "# Diseño\n")
+        self.ejecutar("aprobar", "arquitectura", "--fuente", "manual")
+        self.ejecutar("aprobar", "diseno", "--fuente", "manual")
+
+    def aprobar_cierre(self):
+        """Aprobación humana de cierre, ligada al HEAD de un repositorio Git."""
+        if not os.path.isdir(os.path.join(self.proyecto, ".git")):
+            self.repo_con_commit()
+        self.ejecutar("aprobar", "cierre", "--fuente", "manual")
+
     def track_listo_en_progreso(self, tareas=("1", "2")):
         self.ejecutar("init")
         self.ejecutar("crear", "autenticacion")
         plan = "# Plan\n" + "".join("- [ ] %s Tarea %s\n" % (t, t) for t in tareas)
         self.escribir(("tracks", "001-autenticacion", "plan.md"), plan)
+        self.aprobar_planeacion()
         self.ejecutar("transicion", "listo")
         self.ejecutar("transicion", "en_progreso")
 
@@ -226,6 +240,7 @@ class PruebasTareasYCierre(Base):
         self.track_listo_en_progreso()
         for t in ("1", "2"):
             self.ejecutar("tarea", t, "hecha", "--commit", "abcdef1")
+        self.aprobar_cierre()
         self.ejecutar("cerrar")
         self.assertIsNone(self.json("estado.json")["track_activo"])
         self.assertEqual(self.json("tracks", "001-autenticacion", "track.json")["estado"], "cerrado")
@@ -274,10 +289,12 @@ class PruebasTareasYCierre(Base):
         self._verificado()
         for n in ("revision.json", "verificacion.json"):
             self.escribir(("tracks", "001-autenticacion", n), json.dumps({"aprobado": True}))
+        self.aprobar_cierre()
         self.ejecutar("cerrar")
 
     def test_sin_ganchos_se_cierra(self):
         self._completar()
+        self.aprobar_cierre()
         self.ejecutar("cerrar")
 
 

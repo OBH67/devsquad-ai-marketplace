@@ -66,6 +66,12 @@ class Base(unittest.TestCase):
         self.estado("crear", "pedidos", "--titulo", "Gestión de pedidos")
         self.escribir(".devsquad/tracks/001-pedidos/plan.md", "## Tareas\n- [ ] 1 Crear el modelo\n- [ ] 2 Validar horario\n")
 
+    def aprobar_planeacion(self):
+        self.escribir(".devsquad/arquitectura.md", "# A\n\nPolítica de cierre: humano\n")
+        self.escribir(".devsquad/diseno.md", "# D\n")
+        self.estado("aprobar", "arquitectura", "--fuente", "terminal")
+        self.estado("aprobar", "diseno", "--fuente", "terminal")
+
 
 class PruebasPuntero(Base):
     def test_proyecto_sin_nada(self):
@@ -81,17 +87,42 @@ class PruebasPuntero(Base):
         self.assertIn("Perfil: ok", t)
         self.assertIn("delegar en `bsa`", t)
 
-    def test_track_en_borrador_pide_tareas_al_arquitecto(self):
+    def test_track_en_borrador_sin_tareas_pide_tareas_al_arquitecto(self):
+        self.proyecto_con_track()
+        self.escribir(".devsquad/tracks/001-pedidos/plan.md", "## Tareas\n")
+        for f in ("requerimientos", "arquitectura", "diseno"):
+            self.escribir(".devsquad/%s.md" % f, "# x\n")
+        t = self.puntero()
+        self.assertIn("Track activo: 001-pedidos (borrador) · Gestión de pedidos · tareas 0/0", t)
+        self.assertIn("pedirle al `arquitecto` las tareas", t)
+
+    def test_track_en_borrador_con_tareas_espera_la_aprobacion_humana(self):
         self.proyecto_con_track()
         for f in ("requerimientos", "arquitectura", "diseno"):
             self.escribir(".devsquad/%s.md" % f, "# x\n")
         t = self.puntero()
-        self.assertIn("Track activo: 001-pedidos (borrador) · Gestión de pedidos · tareas 0/2", t)
         self.assertIn("Siguiente tarea: 1 \"Crear el modelo\"", t)
-        self.assertIn("arquitecto", t)
+        self.assertIn("Aprobaciones humanas: arquitectura falta · diseño falta", t)
+        self.assertIn("esperar la aprobación humana de arquitectura, diseno (no la registres tú)", t)
+        self.assertIn("/devsquad-ai:aprobar arquitectura", t)
+        self.aprobar_planeacion()
+        self.assertIn("Aprobaciones humanas: arquitectura ok · diseño ok", self.puntero())
+
+    def test_cumplidos_los_criterios_espera_la_aprobacion_de_cierre(self):
+        self.proyecto_con_track()
+        self.aprobar_planeacion()
+        self.estado("transicion", "listo")
+        self.estado("transicion", "en_progreso")
+        for t in ("1", "2"):
+            self.estado("tarea", t, "hecha", "--commit", "abcdef1")
+        self.estado("transicion", "en_revision")
+        t = self.puntero()
+        self.assertIn("espera la aprobación humana de cierre", t)
+        self.assertIn("política de cierre: humano", t)
 
     def test_track_en_progreso_con_tareas_hechas(self):
         self.proyecto_con_track()
+        self.aprobar_planeacion()
         self.estado("transicion", "listo")
         self.estado("transicion", "en_progreso")
         self.estado("tarea", "1", "hecha", "--commit", "abcdef1")
@@ -103,6 +134,7 @@ class PruebasPuntero(Base):
 
     def test_track_bloqueado_lo_dice(self):
         self.proyecto_con_track()
+        self.aprobar_planeacion()
         self.estado("transicion", "listo")
         self.estado("transicion", "en_progreso")
         self.estado("transicion", "bloqueado")
@@ -288,6 +320,25 @@ class PruebasPrompts(unittest.TestCase):
                 if valor and valor[0] not in "\"'":
                     self.assertNotIn(": ", valor, "%s: %s" % (ruta, linea[:80]))
                     self.assertNotIn(" #", valor, "%s: %s" % (ruta, linea[:80]))
+
+    def test_las_skills_de_decision_humana_no_las_puede_invocar_el_modelo(self):
+        for nombre in ("aprobar", "cancelar"):
+            with open(os.path.join(PLUGIN, "skills", nombre, "SKILL.md"), encoding="utf-8") as f:
+                t = f.read()
+            self.assertIn("\ndisable-model-invocation: true\n", t[:t.index("\n---", 4)], nombre)
+
+    def test_el_orquestador_sabe_pedir_las_aprobaciones_en_cada_modo(self):
+        with open(os.path.join(PLUGIN, "agents", "orquestador.md"), encoding="utf-8") as f:
+            t = f.read()
+        for texto in ("/devsquad-ai:aprobar arquitectura", "/devsquad-ai:aprobar cierre", 'kind: "approval"',
+                      "/devsquad-ai:cancelar", "no las registras tú"):
+            self.assertIn(texto, t)
+
+    def test_el_arquitecto_declara_la_politica_de_cierre_y_solo_humano(self):
+        with open(os.path.join(PLUGIN, "agents", "arquitecto.md"), encoding="utf-8") as f:
+            t = f.read()
+        self.assertIn("**Política de cierre**: humano", t)
+        self.assertIn("única disponible hoy", t)
 
     def test_la_skill_de_memoria_existe(self):
         self.assertTrue(os.path.exists(os.path.join(PLUGIN, "skills", "buscar-memoria", "SKILL.md")))

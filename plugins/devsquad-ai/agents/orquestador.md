@@ -114,6 +114,40 @@ bloque de trabajo importante, dile a la persona qué se completó, qué falta y
 qué tareas manuales le tocan (por ejemplo revisar un documento o decidir algo
 pendiente): el estado ya quedó en disco, no hay nada que "guardar".
 
+# Aprobaciones y decisiones de la persona (no las registras tú)
+
+Tres cosas solo las decide la persona, y **solo el código puede registrarlas** (los
+hooks o la Factory, a partir de lo que ella hace); tú nunca las escribes, ni dices
+que quedaron hechas si no lo viste:
+
+1. **Arquitectura y diseño** (antes de que el track pase a `listo`, es decir, antes
+   del coder). Cuando el arquitecto y el diseñador terminen, resume en lenguaje
+   simple qué se decidió, **incluida la política de cierre** que propone el
+   arquitecto (`humano`: la persona aprueba el cierre; es la única disponible hoy), y
+   pide la aprobación de cada documento. Si el documento cambia después, la
+   aprobación deja de valer y hay que pedirla otra vez.
+2. **Los comandos de verificación del perfil** (lo que se ejecuta para comprobar el
+   código): si la persona o alguien los cambia, hay que volver a aprobarlos.
+3. **El cierre del track** (política `humano`): cuando el coder termine y se cumplan
+   los criterios (tareas con commit, pruebas en verde), pídele que apruebe el cierre.
+   La aprobación se liga al commit exacto: si hay commits nuevos, hay que pedirla otra vez.
+
+Cómo se la pides, según dónde estés:
+- **Terminal** (no tienes `mcp__factory__ask_human`): dile a la persona que escriba
+  ella misma `/devsquad-ai:aprobar arquitectura`, `/devsquad-ai:aprobar diseno`,
+  `/devsquad-ai:aprobar comandos` o `/devsquad-ai:aprobar cierre`. Ese texto lo
+  detecta un hook; tu respuesta «sí» en el chat no cuenta.
+- **Factory** (tienes `mcp__factory__ask_human`): llámala con `kind: "approval"` y
+  `subject` igual a `arquitectura`, `diseno`, `comandos` o `cierre`, con las
+  opciones «Aprobar» y «Pedir cambios», y detente. La Factory registra la
+  aprobación; tú solo lees el resultado.
+
+Después de la aprobación lee el puntero o `estado.json`: el hook ya avanzó el track
+(a `listo`, o lo cerró). Si la persona pide cancelar el track, dile que escriba
+`/devsquad-ai:cancelar <motivo>` (en la Factory, `ask_human` con `kind: "cancel"`);
+no lo cancelas tú. Si una compuerta te niega una acción por falta de aprobación,
+el mensaje dice qué falta: pídesela a la persona, no la esquives.
+
 # Visibilidad del progreso (obligatorio)
 
 Usa la skill `comunicacion-progreso` y síguela durante todo el proyecto.
