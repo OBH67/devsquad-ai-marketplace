@@ -1,0 +1,11 @@
+#!/bin/sh
+# Lanzador de devsquad-estado. Solo comprueba que exista python3 y delega en
+# scripts/devsquad_estado.py. Usa expansión de parámetros (sin dirname) para
+# no depender de ningún otro programa antes de la comprobación.
+if ! command -v python3 >/dev/null 2>&1; then
+  echo "devsquad-estado: no se encontró python3 en el PATH." >&2
+  echo "Instala Python 3.8 o superior y vuelve a intentarlo." >&2
+  echo "(Límite conocido: en Windows sin Python o sin sh, devsquad-estado no funciona.)" >&2
+  exit 127
+fi
+exec python3 "${0%/*}/../scripts/devsquad_estado.py" "$@"

@@ -101,15 +101,30 @@ de prueba busca descubrir.
 
 ## Estructura de archivos que genera el proyecto
 
-DevSquad AI crea una carpeta `.devsquad/` dentro de tu proyecto (no se
-versiona por defecto — ver `.gitignore`) con:
+DevSquad AI crea una carpeta `.devsquad/` dentro de tu proyecto. **Se
+versiona en Git**: es la memoria del proyecto (no la agregues a `.gitignore`).
+Contiene:
 
 - `perfil.md` — tu perfil (nivel técnico, idioma, preferencias, stack
   declarado y archivos protegidos).
 - `requerimientos.md` — lo que definió el BSA.
 - `arquitectura.md` — lo que definió el Arquitecto.
 - `diseno.md` — lo que definió el Diseñador.
-- `estado.md` — en qué va el proyecto y qué falta.
+- `estado.md` — en qué va el proyecto y qué falta (formato anterior; la
+  0.6.0 lo reemplaza por `estado.json` y `tracks/`, ver abajo).
+- `estado.json` — estado legible por máquina, con `schema_version`.
+- `tracks/NNN-nombre/` — una unidad de trabajo: `track.json` (estado),
+  `spec.md` (qué y criterios de aceptación) y `plan.md` (tareas `[ ]` `[~]`
+  `[x]`, cada una hecha con el commit que la implementa). Solo hay un track
+  abierto a la vez: no se abre otro hasta cerrar el actual.
+
+### Script `devsquad-estado`
+
+Cambia y valida ese estado: `devsquad-estado init | crear | transicion |
+tarea | cerrar | estado | validar | migrar` (`--help` para el detalle). Es un
+script de Python 3.8+ sin dependencias; el plugin lo pone en el `PATH` de la
+herramienta Bash. **Límite conocido:** necesita `python3` (y `sh`); sin ellos,
+por ejemplo en Windows sin Python, falla con un mensaje claro.
 
 No necesitas tocar estos archivos manualmente; el equipo de agentes los lee
 y actualiza por ti.

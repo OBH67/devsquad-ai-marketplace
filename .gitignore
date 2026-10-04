@@ -10,5 +10,6 @@ Thumbs.db
 .vscode/
 .idea/
 
-# Estado de proyectos generado por DevSquad AI (no se versiona por defecto)
-.devsquad/
+# Python
+__pycache__/
+*.pyc

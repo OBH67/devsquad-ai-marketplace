@@ -22,6 +22,22 @@ completa con cada uno y se cierra con la versión en el último.
     Code descarta ese nombre sin error.
 - README: modelos y esfuerzo de cada agente.
 
+### Agregado (PR 2: estado y tracks)
+- `.devsquad/` pasa a **versionarse en Git** (se quita de `.gitignore` y se
+  corrige el README). `devsquad-estado init` y `validar` avisan si Git la
+  ignora.
+- Script `devsquad-estado` (`bin/devsquad-estado` + `scripts/devsquad_estado.py`,
+  Python 3.8+, solo biblioteca estándar): crea y valida `estado.json`
+  (`schema_version` 1) y los tracks (`tracks/NNN-slug/` con `track.json`,
+  `spec.md`, `plan.md`), con máquina de estados, un solo track abierto,
+  tareas hechas solo con commit y cierre que exige tareas completas.
+  Ganchos opcionales de cierre: `revision.json` y `verificacion.json`
+  (si existen deben traer `"aprobado": true`). Falla con mensaje claro si
+  falta `python3`; límite conocido: Windows sin Python.
+- `devsquad-estado migrar` y cadena de migraciones para futuros cambios de
+  esquema (hoy solo existe la versión 1).
+- Pruebas de comportamiento con `unittest` (`tests/`) y paso en la CI.
+
 ### Pendiente (fuera del alcance de este PR)
 - El texto del Orquestador y la skill `comunicacion-progreso` siguen pidiendo
   `TodoWrite`; se reescriben con el recorte del prompt del Orquestador.
