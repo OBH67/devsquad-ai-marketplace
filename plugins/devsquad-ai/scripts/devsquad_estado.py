@@ -40,11 +40,14 @@ TRANSICIONES = {
     "bloqueado": (),
 }
 
-# Fase A: se puede cerrar desde estos estados (no existe aún el revisor que
-# lleva el track a `verificado`). La fase C lo endurecerá.
+# Se puede cerrar desde estos estados mientras no exista ningún gancho
+# (revision.json / verificacion.json). Si existe alguno, el cierre exige el
+# estado `verificado`: así las fases B y C endurecen el cierre solas, solo
+# con producir sus archivos.
 CIERRE_DESDE = ("en_progreso", "en_revision", "verificado")
+CIERRE_CON_GANCHOS = "verificado"
 
-# Ganchos opcionales de cierre: si el archivo existe debe traer "aprobado": true.
+# Ganchos de cierre (opcionales): si el archivo existe debe traer "aprobado": true.
 GANCHOS_CIERRE = ("revision.json", "verificacion.json")
 
 # Migraciones de esquema de estado.json: {version_origen: funcion(dict) -> dict}.
@@ -72,8 +75,10 @@ PLANTILLA_PLAN = """# Plan · {titulo}
 Una tarea por línea. Estados: `[ ]` pendiente, `[~]` en curso, `[x]` hecha.
 Una tarea solo se marca hecha con el commit que la implementa:
 `- [x] 1 Texto de la tarea (commit abc1234)`.
+El track no pasa a `listo` hasta que este archivo tenga al menos una tarea.
 
-- [ ] 1 (Primera tarea)
+## Tareas
+
 """
 
 
@@ -342,11 +347,15 @@ def cmd_tarea(a, raiz):
     return 0
 
 
-def comprobar_ganchos(raiz, track_id):
-    for nombre in GANCHOS_CIERRE:
+def comprobar_ganchos(raiz, track):
+    track_id = track["id"]
+    presentes = [n for n in GANCHOS_CIERRE if os.path.exists(os.path.join(ruta_track(raiz, track_id), n))]
+    if presentes and track["estado"] != CIERRE_CON_GANCHOS:
+        raise ReglaError("El track %s tiene %s, así que solo se cierra desde el estado %s (está en %s). "
+                         "Siguiente paso: completa la revisión y la verificación."
+                         % (track_id, " y ".join(presentes), CIERRE_CON_GANCHOS, track["estado"]))
+    for nombre in presentes:
         ruta = os.path.join(ruta_track(raiz, track_id), nombre)
-        if not os.path.exists(ruta):
-            continue
         datos = leer_json(ruta)
         if not isinstance(datos, dict) or datos.get("aprobado") is not True:
             raise ReglaError("El cierre está bloqueado: %s no trae \"aprobado\": true. "
@@ -369,7 +378,7 @@ def cmd_cerrar(a, raiz):
     if sin_commit:
         raise ReglaError("Hay tareas hechas sin commit registrado (%s). Siguiente paso: `devsquad-estado tarea <id> hecha --commit <sha>`."
                          % ", ".join(sin_commit))
-    comprobar_ganchos(raiz, track_id)
+    comprobar_ganchos(raiz, track)
     track["estado"], track["estado_previo"] = "cerrado", None
     guardar_track(raiz, track)
     if estado.get("track_activo") == track_id:

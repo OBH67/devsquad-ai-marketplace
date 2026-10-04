@@ -38,7 +38,41 @@ completa con cada uno y se cierra con la versión en el último.
   esquema (hoy solo existe la versión 1).
 - Pruebas de comportamiento con `unittest` (`tests/`) y paso en la CI.
 
+### Agregado (PR 3: compuertas por hooks)
+- `hooks/hooks.json` (clave `hooks` en el nivel superior) y `scripts/devsquad_hook.py`:
+  `PreToolUse` (Agent, Write, Edit, Bash), `SubagentStop` y `Stop`.
+  Solo actúan si `agent_type` es `<plugin>:<agente>` de este plugin.
+  - Bloquean con exit 2 y mensaje con el paso siguiente: perfil primero, orden
+    de fases, track en trabajo para escribir código, archivos protegidos del
+    perfil y secretos.
+  - `SubagentStop` del coder ejecuta los comandos de verificación del perfil
+    (sección nueva «Comandos de verificación»); si no están declarados avisa y
+    no bloquea; tope de 3 bloqueos seguidos (contador en `estado.json`) y
+    luego escala a la persona.
+  - Revisión del resultado del coder (tiene `Bash`): al terminar se comparan
+    los cambios de Git contra la línea base guardada al delegarle
+    (`linea_base_git` en `estado.json`) y se bloquea, con el mismo tope de 3,
+    si hay un `.env*` real (también ignorado por Git), patrones de secretos o
+    archivos protegidos modificados. Son barandales contra errores del modelo,
+    no una frontera de seguridad frente a `Bash`.
+  - Los hooks avanzan el track con `devsquad-estado`: el BSA lo crea, el
+    track pasa a `listo` con los tres entregables y tareas en `plan.md`, el
+    coder lo lleva a `en_revision` con las tareas completas y `Stop` lo cierra.
+- `devsquad-estado cerrar`: si existe `revision.json` o `verificacion.json`,
+  el cierre exige el estado `verificado` (las fases B y C lo endurecen solas).
+- La skill `iniciar-proyecto` pregunta y guarda los comandos de verificación.
+
+### Cambiado
+- El `plan.md` de un track nuevo ya no trae una tarea de relleno: sin tareas
+  reales el track no pasa a `listo`.
+
 ### Pendiente (fuera del alcance de este PR)
+- PR 4: el Arquitecto escribe las tareas de `plan.md` (cambio de su prompt),
+  probado con un track real hasta `listo`.
+- PR 5: comando `devsquad-estado cancelar` (pide motivo, libera el lugar único
+  y conserva el historial).
+- PR 5: huella de los comandos de verificación del perfil, con confirmación de
+  la persona si cambia.
 - El texto del Orquestador y la skill `comunicacion-progreso` siguen pidiendo
   `TodoWrite`; se reescriben con el recorte del prompt del Orquestador.
 - `preparar-entorno` pide `Bash` al Orquestador, que no lo tiene (decisión:
