@@ -83,5 +83,10 @@ comando por línea, entre acentos graves; si no hay, escribe `N/A`.
 _Última actualización: [fecha]_
 ```
 
+5b. Si el perfil declara comandos de verificación, dile a la persona que **debe aprobarlos
+   ella misma** (escribiendo `/devsquad-ai:aprobar comandos` en la terminal; en la Factory
+   los aprueba la Factory): son comandos que el sistema ejecutará, y sin su aprobación no
+   se ejecutan. Si los cambia después, hay que aprobarlos otra vez.
+
 6. Confirma a la persona, en una frase simple, que su perfil quedó guardado y que a partir de ahora DevSquad AI va a adaptarse a como le gusta trabajar.
 7. Entrega el control de vuelta al Orquestador para que continúe con el proyecto (fase de descubrimiento con el BSA si es un proyecto nuevo).

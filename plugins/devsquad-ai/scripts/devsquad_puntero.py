@@ -72,13 +72,27 @@ def siguiente_paso(raiz, track):
     if estado == "borrador":
         if faltan:
             return "delegar en `%s` (falta `%s`)." % (faltan[0][1], faltan[0][0])
-        return "el track pasa a `listo` cuando `plan.md` tenga tareas: pídeselas al `arquitecto`."
+        try:
+            if not E.tareas_del_plan(E.leer_plan(raiz, track["id"])[1]):
+                return "pedirle al `arquitecto` las tareas de `plan.md`."
+        except E.ReglaError:
+            pass
+        sin = [o for o in E.APROBACIONES_PARA_LISTO if E.estado_aprobacion(raiz, track, o)[0] != "ok"]
+        if sin:
+            return ("esperar la aprobación humana de %s (no la registres tú): %s." % (", ".join(sin), E.comoaprobar(sin[0])))
+        return "el track pasa a `listo` en cuanto se registre la última aprobación."
+    if estado in ("en_progreso", "correcciones", "en_revision", "verificado"):
+        motivo = E.motivo_no_cerrable(raiz, track)
+        if motivo is None:
+            return "el track cumple los criterios y se cierra solo."
+        if E.cumple_criterios_objetivos(raiz, track) and E.politica_de(track) == "humano":
+            return "el track cumple los criterios y espera la aprobación humana de cierre: %s." % E.comoaprobar("cierre")
     return {
         "listo": "delegar en `coder` (el hook pasa el track a `en_progreso`).",
         "en_progreso": "continuar con el `coder` hasta completar las tareas.",
         "correcciones": "continuar con el `coder` con las correcciones.",
-        "en_revision": "esperar la revisión; si ya terminó, el track se cierra al terminar la sesión.",
-        "verificado": "el track se cierra al terminar la sesión (`Stop`).",
+        "en_revision": "esperar la revisión.",
+        "verificado": "completar el cierre del track.",
         "bloqueado": "resolver el bloqueo con la persona.",
     }.get(estado, "revisar el estado.")
 
@@ -104,6 +118,9 @@ def generar(raiz, maximo=MAX_CARACTERES):
         sig = next((t for t in ts if t[1] != "x"), None)
         lineas.append("Track activo: %s (%s) · %s · tareas %d/%d" % (tid, track["estado"], recortar(track.get("titulo", ""), 80),
                                                                      hechas, len(ts)))
+        ap = E.resumen_aprobaciones(raiz, track, estado)
+        lineas.append("Aprobaciones humanas: arquitectura %s · diseño %s · comandos de verificación %s · cierre %s · política de cierre: %s"
+                      % (ap["arquitectura"], ap["diseno"], ap["comandos"], ap["cierre"], E.politica_de(track)))
         lineas.append("Siguiente tarea: %s" % ("%s \"%s\"" % (sig[0], recortar(sig[2], 120)) if sig else "—"))
         lineas.append("Bloqueos: %s" % ("el track está bloqueado (antes: %s)" % (track.get("estado_previo") or "?")
                                          if track["estado"] == "bloqueado" else "ninguno"))

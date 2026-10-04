@@ -47,9 +47,27 @@ jobs:
           EOF
 
   pruebas-comportamiento:
+    name: pruebas-comportamiento (python ${{ matrix.python }})
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # devsquad-estado y los hooks declaran Python 3.8+: se prueban los extremos y los intermedios.
+        python: ["3.8", "3.9", "3.10", "3.11", "3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
 
-      - name: Pruebas de devsquad-estado (unittest)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Configurar git (las pruebas crean repositorios temporales)
+        run: |
+          git config --global user.email "ci@example.com"
+          git config --global user.name "CI"
+
+      - name: Pruebas unitarias y de comportamiento (unittest)
         run: python3 -m unittest discover -s tests -v
+
+      - name: Escenarios de integración (flujo completo de un track con las compuertas)
+        run: python3 -m unittest tests.test_integracion -v

@@ -88,11 +88,22 @@ class Base(unittest.TestCase):
         for n in nombres:
             self.escribir(".devsquad/%s" % n, "# %s\n" % n)
 
+    def aprobar_planeacion(self):
+        """Arquitectura y diseño aprobados por la persona (requisito para `listo`)."""
+        self.escribir(".devsquad/arquitectura.md", "# Arquitectura\n\nPolítica de cierre: humano\n")
+        self.escribir(".devsquad/diseno.md", "# Diseño\n")
+        self.estado("aprobar", "arquitectura", "--fuente", "terminal", "--por", "Ana")
+        self.estado("aprobar", "diseno", "--fuente", "terminal", "--por", "Ana")
+
+    def aprobar_comandos(self):
+        self.estado("aprobar", "comandos", "--fuente", "terminal", "--por", "Ana")
+
     def track(self, estado_final="en_progreso", tareas=("1", "2")):
-        """Crea un track con tareas y lo lleva al estado pedido."""
+        """Crea un track con tareas, aprueba la planeación y lo lleva al estado pedido."""
         self.estado("init")
         self.estado("crear", "inicial")
         self.escribir(".devsquad/tracks/001-inicial/plan.md", "".join("- [ ] %s T%s\n" % (t, t) for t in tareas))
+        self.aprobar_planeacion()
         for e in ("listo", "en_progreso"):
             self.estado("transicion", e)
             if e == estado_final:
@@ -287,6 +298,10 @@ class PruebasSubagentStopPlaneacion(Base):
         self.assertIn("sin tareas", json.loads(r.stdout)["systemMessage"])
         self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "borrador")
         self.escribir(".devsquad/tracks/001-inicial/plan.md", "- [ ] 1 Algo\n")
+        r = self.stop("arquitecto")
+        self.assertIn("aprobación humana", json.loads(r.stdout)["systemMessage"])  # falta que la persona apruebe
+        self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "borrador")
+        self.aprobar_planeacion()
         self.stop("arquitecto")
         self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "listo")
 
@@ -306,13 +321,16 @@ class PruebasSubagentStopCoder(Base):
         return self.hook("subagentstop", {"hook_event_name": "SubagentStop", "agent_id": "c1"},
                          agente="coder", esperado=esperado)
 
-    def con_comandos(self, lint, pruebas="true"):
+    def con_comandos(self, lint, pruebas="true", aprobar=True):
         self.perfil(PERFIL.replace("`true`\n- Pruebas: `true`", "`%s`\n- Pruebas: `%s`" % (lint, pruebas)))
+        if aprobar:
+            self.aprobar_comandos()
 
     def setUp(self):
         super().setUp()
         self.perfil()
         self.track()
+        self.aprobar_comandos()
 
     def contador(self):
         return self.leer_json(".devsquad/estado.json")["contadores"]["stop_bloqueos"]
@@ -324,6 +342,7 @@ class PruebasSubagentStopCoder(Base):
 
     def test_comandos_na_cuentan_como_no_declarados(self):
         self.perfil(PERFIL.replace("- Lint: `true`\n- Pruebas: `true`", "N/A"))
+
         self.assertIn("no declara", json.loads(self.stop().stdout)["systemMessage"])
 
     def test_verificacion_en_rojo_bloquea_con_la_salida(self):
@@ -360,6 +379,31 @@ class PruebasSubagentStopCoder(Base):
         fallos = modulo.ejecutar_verificacion(self.p, [("lento", "sleep 5")])
         self.assertEqual(len(fallos), 1)
         self.assertIn("tiempo", fallos[0][2])
+
+    def test_comandos_sin_aprobar_no_se_ejecutan_y_el_track_no_avanza(self):
+        self.con_comandos("echo SE-EJECUTO > ejecutado.txt", aprobar=False)
+        for t in ("1", "2"):
+            self.estado("tarea", t, "hecha", "--commit", "abcdef1")
+        r = self.stop()  # no bloquea: el coder no puede arreglarlo
+        msg = json.loads(r.stdout)["systemMessage"]
+        self.assertIn("No se ejecutaron", msg)
+        self.assertIn("/devsquad-ai:aprobar comandos", msg)
+        self.assertFalse(os.path.exists(self.ruta("ejecutado.txt")))
+        self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "en_progreso")
+
+    def test_comandos_cambiados_tras_la_aprobacion_vuelven_a_pedirla(self):
+        self.con_comandos("true", aprobar=True)
+        self.perfil(PERFIL.replace("- Lint: `true`", "- Lint: `echo CAMBIADO > ejecutado.txt`"))  # lo cambia el modelo
+        for t in ("1", "2"):
+            self.estado("tarea", t, "hecha", "--commit", "abcdef1")
+        msg = json.loads(self.stop().stdout)["systemMessage"]
+        self.assertIn("cambiaron", msg)
+        self.assertFalse(os.path.exists(self.ruta("ejecutado.txt")))
+        self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "en_progreso")
+        self.aprobar_comandos()  # la persona los revisa y los aprueba
+        self.stop()
+        self.assertTrue(os.path.exists(self.ruta("ejecutado.txt")))
+        self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "en_revision")
 
     def test_con_tareas_abiertas_el_track_no_avanza(self):
         r = self.stop()
@@ -398,6 +442,7 @@ class PruebasResultadoDelCoder(Base):
         self.git_("add", "-A")
         self.git_("commit", "-q", "-m", "base")
         self.track()
+        self.aprobar_comandos()
 
     def delegar(self):
         self.delega("coder", agente="orquestador")
@@ -485,6 +530,7 @@ class PruebasResultadoDelCoder(Base):
 
     def test_violacion_y_verificacion_en_rojo_se_reportan_juntas(self):
         self.perfil(PERFIL.replace("- Lint: `true`", "- Lint: `echo LINT-ROJO; exit 1`"))
+        self.aprobar_comandos()
         self.delegar()
         self.escribir(".env", "A=1\n")
         r = self.stop(esperado=2)
@@ -504,49 +550,97 @@ class PruebasResultadoDelCoder(Base):
 
 
 class PruebasStop(Base):
+    """`Stop` solo informa: NUNCA cierra un track ni bloquea (el cierre lo decide devsquad-estado)."""
+
     def stop(self, **extra):
         datos = {"hook_event_name": "Stop"}
         datos.update(extra)
         return self.hook("stop", datos, agente="orquestador")
+
+    def estado_json(self):
+        return self.leer_json(".devsquad/estado.json")
 
     def setUp(self):
         super().setUp()
         self.perfil()
         self.track()
 
-    def test_cierra_el_track_en_revision_con_tareas_completas(self):
+    def completar(self, revision=True):
         for t in ("1", "2"):
             self.estado("tarea", t, "hecha", "--commit", "abcdef1")
-        self.estado("transicion", "en_revision")
-        r = self.stop()
-        self.assertIn("cerrado", json.loads(r.stdout)["systemMessage"])
-        self.assertIsNone(self.leer_json(".devsquad/estado.json")["track_activo"])
+        if revision:
+            self.estado("transicion", "en_revision")
 
-    def test_no_cierra_con_ganchos_sin_verificar(self):
-        for t in ("1", "2"):
-            self.estado("tarea", t, "hecha", "--commit", "abcdef1")
-        self.estado("transicion", "en_revision")
-        self.escribir(".devsquad/tracks/001-inicial/revision.json", json.dumps({"aprobado": True}))
+    def test_nunca_cierra_el_track_aunque_cumpla_todos_los_criterios(self):
+        self.completar()
+        self.stop()
+        self.assertEqual(self.estado_json()["track_activo"], "001-inicial")
+        self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "en_revision")
+
+    def test_nunca_cierra_ni_con_la_aprobacion_de_cierre_ya_registrada(self):
+        """Aun con política humana y aprobación válida, cerrar es de `devsquad-estado cerrar`, no de Stop."""
+        self.completar()
+        subprocess.run(["git", "-C", self.p, "init", "-q"], check=True)
+        subprocess.run(["git", "-C", self.p, "-c", "user.name=t", "-c", "user.email=t@e.c", "commit", "-q",
+                        "--allow-empty", "-m", "c"], check=True)
+        self.estado("aprobar", "cierre", "--fuente", "terminal")
+        self.stop()
+        self.assertEqual(self.estado_json()["track_activo"], "001-inicial")
+
+    def test_informa_que_espera_la_aprobacion_de_cierre(self):
+        self.completar()
+        subprocess.run(["git", "-C", self.p, "init", "-q"], check=True)
+        subprocess.run(["git", "-C", self.p, "-c", "user.name=t", "-c", "user.email=t@e.c", "commit", "-q",
+                        "--allow-empty", "-m", "c"], check=True)
+        r = self.stop()
+        msg = json.loads(r.stdout)["systemMessage"]
+        self.assertIn("espera la aprobación de cierre", msg)
+        self.assertIn("/devsquad-ai:aprobar cierre", msg)
+        self.assertIn("ask_human", msg)
+
+    def test_informa_una_sola_vez_mientras_nada_cambie(self):
+        self.completar()
+        self.assertNotEqual(self.stop().stdout.strip(), "")
         self.assertEqual(self.stop().stdout.strip(), "")
-        self.assertEqual(self.leer_json(".devsquad/estado.json")["track_activo"], "001-inicial")
+
+    def test_no_informa_si_faltan_criterios_objetivos(self):
+        self.estado("tarea", "1", "hecha", "--commit", "abcdef1")
+        self.assertEqual(self.stop().stdout.strip(), "")
+
+    def test_informa_que_ya_cumple_cuando_la_aprobacion_esta_vigente(self):
+        self.completar()
+        subprocess.run(["git", "-C", self.p, "init", "-q"], check=True)
+        subprocess.run(["git", "-C", self.p, "-c", "user.name=t", "-c", "user.email=t@e.c", "commit", "-q",
+                        "--allow-empty", "-m", "c"], check=True)
+        self.estado("aprobar", "cierre", "--fuente", "terminal")
+        msg = json.loads(self.stop().stdout)["systemMessage"]
+        self.assertIn("ya cumple los criterios de cierre", msg)
 
     def test_nunca_bloquea_el_stop(self):
         self.stop()  # track en_progreso con tareas abiertas: exit 0
 
-    def test_un_subagente_no_cierra_tracks(self):
-        for t in ("1", "2"):
-            self.estado("tarea", t, "hecha", "--commit", "abcdef1")
-        self.estado("transicion", "en_revision")
-        self.stop(agent_id="x")
-        self.assertEqual(self.leer_json(".devsquad/estado.json")["track_activo"], "001-inicial")
+    def test_un_subagente_no_informa_ni_cierra(self):
+        self.completar()
+        self.assertEqual(self.stop(agent_id="x").stdout.strip(), "")
+        self.assertEqual(self.estado_json()["track_activo"], "001-inicial")
+
+    def test_el_codigo_del_hook_stop_no_puede_cerrar(self):
+        """Falla si alguien reintroduce el cierre por Stop: la función stop no debe llamar a `cerrar`."""
+        with open(HOOK, encoding="utf-8") as f:
+            codigo = f.read()
+        inicio = codigo.index("def stop(data, raiz, rol):")
+        fin = codigo.index("\nORDEN_DE_LA_PERSONA")
+        cuerpo = codigo[inicio:fin] + codigo[codigo.index("def aviso_de_cierre"):inicio]
+        self.assertNotIn('"cerrar"', cuerpo)
+        self.assertNotIn("'cerrar'", cuerpo)
 
 
 class PruebasConfiguracionDelPlugin(unittest.TestCase):
-    def test_hooks_json_tiene_la_clave_hooks_y_los_cuatro_eventos(self):
+    def test_hooks_json_tiene_la_clave_hooks_y_los_cinco_eventos(self):
         with open(os.path.join(PLUGIN, "hooks", "hooks.json"), encoding="utf-8") as f:
             cfg = json.load(f)
         self.assertEqual(list(cfg.keys()), ["hooks"])
-        self.assertEqual(set(cfg["hooks"]), {"SessionStart", "PreToolUse", "SubagentStop", "Stop"})
+        self.assertEqual(set(cfg["hooks"]), {"SessionStart", "UserPromptSubmit", "PreToolUse", "SubagentStop", "Stop"})
         matcher = cfg["hooks"]["PreToolUse"][0]["matcher"]
         for tool in ("Agent", "Write", "Edit", "Bash"):
             self.assertIn(tool, matcher.split("|"))

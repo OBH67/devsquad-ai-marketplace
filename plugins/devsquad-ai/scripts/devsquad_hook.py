@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compuertas de DevSquad AI (hooks del plugin).
 
-Uso: devsquad_hook.py sessionstart | pretooluse | subagentstop | stop   (JSON del hook por stdin)
+Uso: devsquad_hook.py sessionstart | userpromptsubmit | pretooluse | subagentstop | stop   (JSON del hook por stdin)
 
 Solo actúa cuando `agent_type` es uno de los agentes de este plugin (el valor
 llega con espacio de nombres: `<plugin>:<agente>`). En cualquier otra sesión no
@@ -126,18 +126,7 @@ def perfil_valido(raiz):
 
 
 def comandos_verificacion(texto):
-    """[(etiqueta, comando)] de la sección «Comandos de verificación» del perfil."""
-    comandos, dentro = [], False
-    for linea in (texto or "").split("\n"):
-        if re.match(r"^#{1,6}\s", linea):
-            dentro = sin_acentos(linea).strip().lower().lstrip("# ").startswith("comandos de verificacion")
-            continue
-        if dentro and re.match(r"^\s*[-*]\s", linea):
-            m = re.search(r"`([^`]+)`", linea)
-            if m and not m.group(1).startswith("["):
-                etiqueta = re.sub(r"^\s*[-*]\s*", "", linea.split(":", 1)[0]).strip() if ":" in linea else "comando"
-                comandos.append((etiqueta, m.group(1).strip()))
-    return comandos
+    return E.comandos_verificacion(texto)
 
 
 def rutas_protegidas(texto):
@@ -219,6 +208,31 @@ def compuerta_secretos(rel, ti):
                           "usa una variable de entorno y pídele la llave a la persona por un canal seguro." % (rel, que))
 
 
+ARCHIVOS_DE_ESTADO = re.compile(r"^\.devsquad/(estado\.json|tracks/[^/]+/track\.json)$")
+ORDEN_HUMANA = re.compile(r"devsquad[-_]estado(?:\.py)?\b.*?\b(aprobar|cancelar)\b", re.DOTALL)
+
+
+def compuerta_estado_gestionado(rel):
+    """estado.json y track.json los cambian devsquad-estado y los hooks, nunca el modelo a mano.
+
+    Ahí viven las aprobaciones humanas y la política de cierre: si el modelo pudiera
+    escribirlos, podría fabricarlas o rebajarlas.
+    """
+    if ARCHIVOS_DE_ESTADO.match(rel):
+        raise Bloqueo("%s lo gestionan `devsquad-estado` y los hooks (ahí viven las aprobaciones humanas y la política de "
+                      "cierre); no se edita a mano. Siguiente paso: usa `devsquad-estado` para lo que sí te corresponde "
+                      "(por ejemplo `tarea`) o pídele a la persona la decisión." % rel)
+
+
+def compuerta_ordenes_humanas(comando):
+    """`aprobar` y `cancelar` son decisiones de la persona: los agentes no las ejecutan."""
+    m = ORDEN_HUMANA.search(comando or "")
+    if m:
+        raise Bloqueo("`devsquad-estado %s` es una decisión de la persona: la registra el hook cuando ella la da "
+                      "(`/%s:%s ...` en la terminal) o la Factory (ask_human). Tú no la ejecutas. Siguiente paso: "
+                      "pídesela a la persona y espera." % (m.group(1), nombre_plugin(), m.group(1)))
+
+
 def compuerta_protegidos(raiz, rel):
     patron = es_protegido(rel, rutas_protegidas(perfil_texto(raiz)))
     if patron:
@@ -238,6 +252,11 @@ def compuerta_track_para_coder(raiz):
     if not tid or not track:
         raise Bloqueo("No hay un track activo, así que el coder no tiene trabajo definido. Siguiente paso: "
                       "completa la planeación (el track nace al terminar el BSA y pasa a `listo` cuando plan.md tiene tareas).")
+    if track["estado"] in ("listo",) + ESTADOS_DE_TRABAJO:
+        faltas = E.faltan_aprobaciones_para_listo(raiz, track)
+        if faltas:
+            raise Bloqueo("El coder no trabaja con la arquitectura o el diseño sin aprobación vigente. Falta: %s."
+                          % "; ".join(faltas))
     if track["estado"] == "listo":
         codigo, _, err = estado_cli(raiz, "transicion", "en_progreso")
         if codigo != 0:
@@ -275,7 +294,10 @@ def pretooluse(data, raiz, rol):
     compuerta_perfil(raiz, tool, rel)
     if not os.path.exists(E.ruta_estado(raiz)):
         estado_cli(raiz, "init")
+    if tool == "Bash":
+        compuerta_ordenes_humanas(ti.get("command"))
     if tool in ("Write", "Edit") and rel is not None:
+        compuerta_estado_gestionado(rel)
         compuerta_secretos(rel, ti)
         compuerta_protegidos(raiz, rel)
         if not rel.startswith(E.DIR_ESTADO + "/"):
@@ -343,13 +365,30 @@ def instantanea(raiz):
     return None if rutas is None else {r: huella(raiz, r) for r in sorted(rutas)}
 
 
+def huella_aprobaciones(raiz):
+    """Huella de lo que solo la persona puede fijar: aprobaciones, política de cierre y comandos aprobados."""
+    datos = {}
+    for t in E.listar_tracks(raiz):
+        try:
+            track = E.cargar_track(raiz, t)
+        except E.ReglaError:
+            continue
+        datos[t] = {"aprobaciones": track.get("aprobaciones"), "politica_cierre": track.get("politica_cierre"),
+                    "cancelacion": track.get("cancelacion")}
+    try:
+        datos["_comandos"] = E.cargar_estado(raiz).get("comandos_aprobados")
+    except E.ReglaError:
+        pass
+    return hashlib.sha1(json.dumps(datos, sort_keys=True).encode("utf-8")).hexdigest()
+
+
 def guardar_linea_base(raiz):
     """Al delegar en el coder: lo que ya estaba cambiado no se le atribuye."""
-    base = instantanea(raiz)
-    if base is None:
-        return
     estado = E.cargar_estado(raiz)
-    estado["linea_base_git"] = base
+    estado["linea_base_aprobaciones"] = huella_aprobaciones(raiz)
+    base = instantanea(raiz)
+    if base is not None:
+        estado["linea_base_git"] = base
     E.escribir_json(E.ruta_estado(raiz), estado)
 
 
@@ -359,13 +398,18 @@ def revisar_cambios(raiz):
     Devuelve (violaciones, avisos). Atrapa lo que Bash hace sin pasar por
     Write/Edit (`echo X > .env`, `sed -i`...).
     """
+    estado = E.cargar_estado(raiz)
+    violaciones = []
+    if estado.get("linea_base_aprobaciones") and estado["linea_base_aprobaciones"] != huella_aprobaciones(raiz):
+        violaciones.append("Las aprobaciones humanas, la política de cierre, los comandos aprobados o una cancelación "
+                           "cambiaron mientras trabajabas: solo la persona puede fijarlas. Restaura `.devsquad/estado.json` y los "
+                           "`track.json` con `git checkout -- .devsquad/` y no los toques.")
     actual = instantanea(raiz)
     if actual is None:
-        return [], ["Aviso: no es un repositorio Git (o falta git); no se pudo revisar el resultado del coder "
-                    "contra secretos y archivos protegidos."]
-    base = E.cargar_estado(raiz).get("linea_base_git") or {}
+        return violaciones, ["Aviso: no es un repositorio Git (o falta git); no se pudo revisar el resultado del coder "
+                             "contra secretos y archivos protegidos."]
+    base = estado.get("linea_base_git") or {}
     protegidos = rutas_protegidas(perfil_texto(raiz))
-    violaciones = []
     for rel, h in actual.items():
         if base.get(rel) == h:
             continue
@@ -446,28 +490,38 @@ def ejecutar_verificacion(raiz, comandos):
 def verificar_coder(raiz):
     """Bloquea (Bloqueo) si falla la verificación o el resultado viola las reglas.
 
-    Devuelve mensajes informativos si no hay nada que bloquear. Los fallos de
-    verificación y las violaciones comparten el mismo tope de bloqueos.
+    Devuelve (mensajes, puede_avanzar). Los comandos del perfil solo se ejecutan si la
+    persona aprobó su huella actual: si no están aprobados o cambiaron, no se ejecutan,
+    no se avanza el track y se avisa (sin bloquear: el coder no puede arreglarlo).
+    Los fallos de verificación y las violaciones comparten el mismo tope de bloqueos.
     """
     violaciones, avisos = revisar_cambios(raiz)
     comandos = comandos_verificacion(perfil_texto(raiz))
+    puede_avanzar, fallos = True, []
     if not comandos:
         avisos.append("Aviso: el perfil no declara comandos de verificación; no se pudo comprobar el trabajo del "
                       "coder. Agrega la sección «Comandos de verificación» a %s." % PERFIL)
-    fallos = ejecutar_verificacion(raiz, comandos) if comandos else []
+    else:
+        aprobacion, detalle = E.estado_aprobacion(raiz, {}, "comandos")
+        if aprobacion != "ok":
+            puede_avanzar = False
+            avisos.append("No se ejecutaron los comandos de verificación (%s) y el track no avanza: %s. Siguiente paso: %s."
+                          % (", ".join(c for _, c in comandos), detalle, E.comoaprobar("comandos")))
+        else:
+            fallos = ejecutar_verificacion(raiz, comandos)
     estado = E.cargar_estado(raiz)
     contadores = estado.setdefault("contadores", {})
     previos = contadores.get("stop_bloqueos", 0)
     if not fallos and not violaciones:
         contadores["stop_bloqueos"] = 0
         E.escribir_json(E.ruta_estado(raiz), estado)
-        return avisos
+        return avisos, puede_avanzar
     detalle = "\n".join(["- %s" % v for v in violaciones] + ["- %s (`%s`):\n%s" % f for f in fallos])
     if previos >= MAX_BLOQUEOS:
         contadores["stop_bloqueos"] = 0
         E.escribir_json(E.ruta_estado(raiz), estado)
         return ["La verificación sigue fallando tras %d intentos; se deja terminar al coder y se escala a la persona. "
-                "Siguiente paso: pregúntale cómo proceder (ask_human). Problemas:\n%s" % (MAX_BLOQUEOS, detalle)]
+                "Siguiente paso: pregúntale cómo proceder (ask_human). Problemas:\n%s" % (MAX_BLOQUEOS, detalle)], False
     contadores["stop_bloqueos"] = previos + 1
     E.escribir_json(E.ruta_estado(raiz), estado)
     raise Bloqueo("La verificación falló (intento %d de %d); no puedes terminar con el código en rojo. "
@@ -492,12 +546,14 @@ def subagentstop(data, raiz, rol):
     if not perfil_valido(raiz):
         return []
     try:
+        mensajes = []
         if rol == "coder":
-            mensajes = verificar_coder(raiz)
-            return mensajes + avanzar_coder(raiz)
-        if rol in ("bsa", "arquitecto", "disenador"):
-            return avanzar_planeacion(raiz, rol)
-        return []
+            mensajes, puede_avanzar = verificar_coder(raiz)
+            if puede_avanzar:
+                mensajes = mensajes + avanzar_coder(raiz)
+        elif rol in ("bsa", "arquitecto", "disenador"):
+            mensajes = avanzar_planeacion(raiz, rol)
+        return mensajes + cierre_automatico(raiz)
     finally:
         M.escribir_indice(raiz)  # el índice de memoria refleja siempre el estado vigente
 
@@ -515,15 +571,119 @@ def sessionstart(data, raiz, rol):
     return P.generar(raiz)
 
 
-# ----------------------------------------------------------------------- Stop
+# -------------------------------------------------------- cierre y aprobaciones
+
+def cierre_automatico(raiz):
+    """Política `automatico`: el código cierra cuando se cumplen los criterios objetivos.
+
+    Hoy es inalcanzable (el script rechaza `automatico` mientras no exista el revisor), pero
+    es la única vía por la que un hook puede cerrar un track, y solo con esa política.
+    """
+    tid, track = track_activo(raiz)
+    if not track or E.politica_de(track) != "automatico" or track["estado"] not in E.CIERRE_DESDE:
+        return []
+    if E.motivo_no_cerrable(raiz, track) is not None:
+        return []
+    codigo, out, _ = estado_cli(raiz, "cerrar")
+    return [out] if codigo == 0 else []
+
+
+def aviso_de_cierre(raiz):
+    """Texto informativo sobre el cierre del track activo, o None. Nunca cierra."""
+    tid, track = track_activo(raiz)
+    if not track or track["estado"] not in ("en_progreso", "en_revision", "verificado", "correcciones"):
+        return None
+    if not E.cumple_criterios_objetivos(raiz, track):
+        return None
+    if E.motivo_no_cerrable(raiz, track) is None:
+        return "El track %s ya cumple los criterios de cierre." % tid
+    if E.politica_de(track) == "humano":
+        estado, detalle = E.estado_aprobacion(raiz, track, "cierre")
+        return ("El track %s cumple los criterios objetivos y espera la aprobación de cierre de la persona "
+                "(política `humano`; aprobación %s: %s). %s." % (tid, estado, detalle, E.comoaprobar("cierre")))
+    return None
+
 
 def stop(data, raiz, rol):
+    """`Stop` solo informa: nunca cierra ni bloquea. El cierre lo decide el código de `devsquad-estado`
+    (con la aprobación humana, o por política `automatico`), no este hook."""
     if data.get("agent_id") or not os.path.exists(E.ruta_estado(raiz)):
         return []
+    aviso = aviso_de_cierre(raiz)
+    estado = E.cargar_estado(raiz)
+    if aviso == estado.get("ultimo_aviso_cierre"):
+        return []  # ya se informó: no repetirlo en cada turno
+    estado["ultimo_aviso_cierre"] = aviso
+    E.escribir_json(E.ruta_estado(raiz), estado)
+    return [aviso] if aviso else []
+
+
+ORDEN_DE_LA_PERSONA = re.compile(r"^\s*/(?:(?P<plugin>[^:\s/]+):)?(?P<orden>aprobar|cancelar)\b(?P<resto>.*)$", re.DOTALL)
+
+
+def quien_aprueba(raiz):
+    try:
+        r = subprocess.run(["git", "-C", raiz, "config", "user.name"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+                           universal_newlines=True)
+        if r.returncode == 0 and r.stdout.strip():
+            return r.stdout.strip()
+    except OSError:
+        pass
+    return "persona"
+
+
+def userpromptsubmit(data, raiz):
+    """Señal humana: la persona escribió `/<plugin>:aprobar <objeto>` o `/<plugin>:cancelar <motivo>`.
+
+    El texto lo teclea la persona (el modelo no puede producirlo), así que es la fuente de la aprobación.
+    Devuelve (mensajes, contexto_para_el_modelo) o None si el prompt no es una orden de DevSquad.
+    """
+    m = ORDEN_DE_LA_PERSONA.match(data.get("prompt") or "")
+    if not m or (m.group("plugin") and m.group("plugin") != nombre_plugin()):
+        return None
+    orden, resto = m.group("orden"), m.group("resto").strip()
+    if not os.path.exists(E.ruta_estado(raiz)):
+        return ["No hay %s/%s en este proyecto; no se registró nada." % (E.DIR_ESTADO, E.ARCHIVO_ESTADO)], None
+    por = quien_aprueba(raiz)
+    if orden == "cancelar":
+        codigo, out, err = estado_cli(raiz, "cancelar", "--motivo", resto, "--fuente", "terminal", "--por", por)
+        return [out if codigo == 0 else "No se canceló: " + err.replace("devsquad-estado: ", "")], None
+    objeto = resto.split()[0].lower().replace("diseño", "diseno") if resto.split() else ""
+    if objeto not in E.APROBABLES:
+        return ["Uso: /%s:aprobar %s" % (nombre_plugin(), "|".join(E.APROBABLES))], None
+    codigo, out, err = estado_cli(raiz, "aprobar", objeto, "--fuente", "terminal", "--por", por)
+    mensajes = [out if codigo == 0 else "No se registró la aprobación: " + err.replace("devsquad-estado: ", "")]
+    if codigo == 0:
+        mensajes += avanzar_tras_aprobacion(raiz, objeto)
+    return mensajes, None
+
+
+def avanzar_tras_aprobacion(raiz, objeto):
+    """Tras una aprobación humana el código intenta el paso que ella desbloquea (listo o cierre)."""
     tid, track = track_activo(raiz)
-    if track and track["estado"] in ("en_revision", "verificado"):
-        codigo, out, _ = estado_cli(raiz, "cerrar")
-        return [out] if codigo == 0 else []
+    if not track:
+        return []
+    if objeto in E.APROBACIONES_PARA_LISTO and track["estado"] == "borrador":
+        if all(os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f)) for f in ENTREGABLES):
+            codigo, out, err = estado_cli(raiz, "transicion", "listo")
+            return [out] if codigo == 0 else ["El track sigue en borrador: " + err.replace("devsquad-estado: ", "")]
+        return []
+    if objeto == "comandos" and track["estado"] in ESTADOS_DE_TRABAJO:
+        # El coder ya había terminado sin poder verificar: con los comandos aprobados se verifica ahora.
+        try:
+            if E.tareas_abiertas(raiz, tid):
+                return []
+        except E.ReglaError:
+            return []
+        fallos = ejecutar_verificacion(raiz, comandos_verificacion(perfil_texto(raiz)))
+        if fallos:
+            return ["La verificación falló con los comandos aprobados; el track sigue en %s: %s"
+                    % (track["estado"], "; ".join("%s: %s" % (f[0], f[2][-300:]) for f in fallos))]
+        codigo, out, err = estado_cli(raiz, "transicion", "en_revision")
+        return [out] if codigo == 0 else [err]
+    if objeto == "cierre":
+        codigo, out, err = estado_cli(raiz, "cerrar")
+        return [out] if codigo == 0 else ["No se cerró: " + err.replace("devsquad-estado: ", "")]
     return []
 
 
@@ -531,11 +691,21 @@ def stop(data, raiz, rol):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    if len(argv) != 1 or argv[0] not in ("sessionstart", "pretooluse", "subagentstop", "stop"):
-        sys.stderr.write("Uso: devsquad_hook.py sessionstart|pretooluse|subagentstop|stop\n")
+    if len(argv) != 1 or argv[0] not in ("sessionstart", "userpromptsubmit", "pretooluse", "subagentstop", "stop"):
+        sys.stderr.write("Uso: devsquad_hook.py sessionstart|userpromptsubmit|pretooluse|subagentstop|stop\n")
         return 1
     try:
         data = json.load(sys.stdin)
+        if argv[0] == "userpromptsubmit":  # lo teclea la persona: no depende de qué agente esté activo
+            raiz = os.path.abspath(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd())
+            resultado = userpromptsubmit(data, raiz)
+            if resultado:
+                texto = "DevSquad AI: " + " | ".join(resultado[0])
+                print(json.dumps({"systemMessage": texto, "hookSpecificOutput": {
+                    "hookEventName": "UserPromptSubmit",
+                    "additionalContext": "RESULTADO DEL HOOK (ya procesado por código, no por ti): " + " | ".join(resultado[0])}},
+                                 ensure_ascii=False))
+            return 0
         rol = rol_de(data.get("agent_type"))
         if rol is None:
             return 0
