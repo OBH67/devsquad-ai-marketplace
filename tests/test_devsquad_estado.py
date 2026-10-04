@@ -241,19 +241,31 @@ class PruebasTareasYCierre(Base):
         self.track_listo_en_progreso(tareas=("1",))
         self.ejecutar("tarea", "1", "hecha", "--commit", "abcdef1")
 
-    def test_gancho_revision_rechazada_bloquea(self):
+    def _verificado(self):
         self._completar()
+        self.ejecutar("transicion", "en_revision")
+        self.ejecutar("transicion", "verificado")
+
+    def test_gancho_presente_exige_estado_verificado(self):
+        self._completar()
+        self.escribir(("tracks", "001-autenticacion", "revision.json"), json.dumps({"aprobado": True}))
+        r = self.ejecutar("cerrar", esperado=1)
+        self.assertIn("verificado", r.stderr)
+        self.assertIn("revision.json", r.stderr)
+
+    def test_gancho_revision_rechazada_bloquea(self):
+        self._verificado()
         self.escribir(("tracks", "001-autenticacion", "revision.json"), json.dumps({"aprobado": False}))
         r = self.ejecutar("cerrar", esperado=1)
         self.assertIn("revision.json", r.stderr)
 
     def test_gancho_verificacion_ilegible_bloquea(self):
-        self._completar()
+        self._verificado()
         self.escribir(("tracks", "001-autenticacion", "verificacion.json"), "no json")
         self.ejecutar("cerrar", esperado=1)
 
-    def test_ganchos_aprobados_dejan_cerrar(self):
-        self._completar()
+    def test_ganchos_aprobados_dejan_cerrar_desde_verificado(self):
+        self._verificado()
         for n in ("revision.json", "verificacion.json"):
             self.escribir(("tracks", "001-autenticacion", n), json.dumps({"aprobado": True}))
         self.ejecutar("cerrar")
