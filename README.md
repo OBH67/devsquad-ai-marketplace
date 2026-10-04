@@ -4,17 +4,17 @@ Equipo de agentes SDLC para Claude Code.
 
 Incluye 5 agentes:
 
-- **Orquestador** (Opus) — director de proyecto, punto de entrada único.
-- **BSA** (Sonnet) — traduce tu idea en requerimientos claros.
-- **Arquitecto** (Opus) — define la arquitectura, siempre explicando costo e
+- **Orquestador** (Sonnet · esfuerzo medio) — director de proyecto, punto de entrada único.
+- **BSA** (Sonnet · esfuerzo xhigh) — traduce tu idea en requerimientos claros.
+- **Arquitecto** (Opus · esfuerzo alto) — define la arquitectura, siempre explicando costo e
   impacto de cada decisión. Sobre el stack sigue una jerarquía: si tú ya
   declaraste uno al configurar tu perfil, ese stack manda y el Arquitecto
   diseña sobre él sin cuestionarlo; si no declaraste ninguno, él lo propone
   y lo justifica según tus requerimientos.
-- **Diseñador** (Opus) — define paleta, tipografía, layout, accesibilidad y
+- **Diseñador** (Sonnet · esfuerzo alto) — define paleta, tipografía, layout, accesibilidad y
   responsividad antes de que se escriba código, para que nadie improvise
   el diseño visual mientras programa.
-- **Coder** (Sonnet) — implementa el código siguiendo lo ya definido, y se
+- **Coder** (Sonnet · esfuerzo alto) — implementa el código siguiendo lo ya definido, y se
   detiene a preguntar antes de tocar cualquier archivo que hayas marcado
   como protegido.
 
