@@ -1,5 +1,35 @@
 # Changelog
 
+## [Sin publicar] — 0.6.0 en curso (fase A del rediseño)
+
+La 0.6.0 se construye en varios pull requests apilados; esta sección se
+completa con cada uno y se cierra con la versión en el último.
+
+### Cambiado (PR 1: modelos, esfuerzo y herramientas)
+- Modelo y esfuerzo fijados por agente en el frontmatter (`model` y `effort`):
+  Orquestador `sonnet · medium` (antes `opus`), BSA `sonnet · xhigh`,
+  Arquitecto `opus · high`, Diseñador `sonnet · high` (antes `opus`; es una
+  propuesta pendiente de medir) y Coder `sonnet · high`.
+- Listas `tools:` corregidas:
+  - Se quita `TodoWrite` de los cinco agentes. Claude Code lo deja
+    desactivado por defecto y las herramientas de tareas no se entregan por
+    defecto en los modelos actuales, salvo en sesiones en segundo plano y en
+    la nube (documentación: *Task tool availability*).
+  - El Orquestador cambia `Task` por `Agent` (el nombre actual; `Task` sigue
+    funcionando como alias) y recibe `mcp__factory__ask_human`, porque la
+    lista `tools:` es cerrada y excluye las herramientas MCP que no se listan.
+    Si el servidor MCP no existe (por ejemplo en una terminal normal), Claude
+    Code descarta ese nombre sin error.
+- README: modelos y esfuerzo de cada agente.
+
+### Pendiente (fuera del alcance de este PR)
+- El texto del Orquestador y la skill `comunicacion-progreso` siguen pidiendo
+  `TodoWrite`; se reescriben con el recorte del prompt del Orquestador.
+- `preparar-entorno` pide `Bash` al Orquestador, que no lo tiene (decisión:
+  no se le da).
+- Restringir a qué agentes puede delegar el Orquestador (`Agent(...)`): no
+  verificado cómo se nombran los agentes de plugin en esa lista.
+
 ## [0.5.1] — Fix: sesión mostraba proyecto de otra carpeta al pedir "proyecto nuevo"
 
 Bug real reportado en uso: alguien creó una carpeta nueva para un proyecto
