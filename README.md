@@ -110,8 +110,8 @@ Contiene:
 - `requerimientos.md` — lo que definió el BSA.
 - `arquitectura.md` — lo que definió el Arquitecto.
 - `diseno.md` — lo que definió el Diseñador.
-- `estado.md` — en qué va el proyecto y qué falta (formato anterior; la
-  0.6.0 lo reemplaza por `estado.json` y `tracks/`, ver abajo).
+- `estado.md` — formato anterior; la 0.6.0 lo reemplaza por `estado.json` y
+  `tracks/` (ver abajo) y ya no se escribe.
 - `estado.json` — estado legible por máquina, con `schema_version`.
 - `tracks/NNN-nombre/` — una unidad de trabajo: `track.json` (estado),
   `spec.md` (qué y criterios de aceptación) y `plan.md` (tareas `[ ]` `[~]`
@@ -150,6 +150,21 @@ Requieren `python3`; si falta, los hooks fallan sin bloquear (límite conocido).
 > formato desconocido, un comando que reescribe el historial de Git, etc.).
 > Para aislar de verdad al agente hace falta aislamiento del sistema operativo
 > (usuario sin privilegios, sin credenciales a su alcance), no hooks.
+
+### Arranque atómico y memoria
+
+- Al empezar, reanudar, limpiar (`/clear`) o compactar la conversación, el
+  hook `SessionStart` inyecta un **puntero** de unas pocas líneas generado por
+  script (`scripts/devsquad_puntero.py`, tope duro de 10.000 caracteres): track
+  activo y su estado, siguiente tarea, último commit, bloqueos, memoria
+  disponible y el siguiente paso sugerido. «¿En qué me quedé?» es una consulta
+  exacta sobre el estado, no una búsqueda. (`PreCompact` no puede inyectar
+  contexto; tras compactar lo repone `SessionStart`.)
+- **Memoria, nivel 1**: un archivo por decisión o aprendizaje en
+  `.devsquad/memoria/{decisiones,aprendizajes}/`, y un índice generado
+  (`.devsquad/memoria/indice.md`) que el agente lee con Read; la skill
+  `buscar-memoria` explica cómo. El Orquestador no tiene `Bash`. Los niveles 2
+  (texto completo) y 3 (significado) quedan para más adelante.
 
 ### Script `devsquad-estado`
 

@@ -1,5 +1,21 @@
 {
   "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/devsquad_hook.py",
+              "sessionstart"
+            ],
+            "timeout": 30
+          }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Agent|Write|Edit|Bash",
@@ -7,7 +23,10 @@
           {
             "type": "command",
             "command": "python3",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/devsquad_hook.py", "pretooluse"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/devsquad_hook.py",
+              "pretooluse"
+            ],
             "timeout": 30
           }
         ]
@@ -19,7 +38,10 @@
           {
             "type": "command",
             "command": "python3",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/devsquad_hook.py", "subagentstop"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/devsquad_hook.py",
+              "subagentstop"
+            ],
             "timeout": 600
           }
         ]
@@ -31,7 +53,10 @@
           {
             "type": "command",
             "command": "python3",
-            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/devsquad_hook.py", "stop"],
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/scripts/devsquad_hook.py",
+              "stop"
+            ],
             "timeout": 30
           }
         ]

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Compuertas de DevSquad AI (hooks del plugin).
 
-Uso: devsquad_hook.py pretooluse | subagentstop | stop   (JSON del hook por stdin)
+Uso: devsquad_hook.py sessionstart | pretooluse | subagentstop | stop   (JSON del hook por stdin)
 
 Solo actúa cuando `agent_type` es uno de los agentes de este plugin (el valor
 llega con espacio de nombres: `<plugin>:<agente>`). En cualquier otra sesión no
@@ -32,6 +32,8 @@ AQUI = os.path.dirname(os.path.abspath(__file__))
 RAIZ_PLUGIN = os.path.dirname(AQUI)
 sys.path.insert(0, AQUI)
 import devsquad_estado as E  # noqa: E402
+import devsquad_memoria as M  # noqa: E402
+import devsquad_puntero as P  # noqa: E402
 
 # Entregables de cada fase dentro de .devsquad/ y quién los produce.
 ENTREGABLES = {"requerimientos.md": "bsa", "arquitectura.md": "arquitecto", "diseno.md": "disenador"}
@@ -386,11 +388,26 @@ def revisar_cambios(raiz):
 
 # --------------------------------------------------------------- SubagentStop
 
-def slug_desde_requerimientos(raiz):
+def titulo_desde_requerimientos(raiz):
+    """Primer `# título` de requerimientos.md sin el prefijo «Requerimientos —», o '' si no hay."""
     texto = leer_texto(os.path.join(raiz, E.DIR_ESTADO, "requerimientos.md")) or ""
     m = re.search(r"^#\s+(.+)$", texto, re.MULTILINE)
-    slug = re.sub(r"[^a-z0-9]+", "-", sin_acentos(m.group(1)).lower()).strip("-") if m else ""
-    return slug[:40].strip("-") or "iteracion"
+    if not m:
+        return ""
+    titulo = re.sub(r"^(requerimientos|requisitos)\b\s*[:\-—–]*\s*(de(l)?\s+)?", "", m.group(1).strip(), flags=re.IGNORECASE)
+    return (titulo or m.group(1)).strip()
+
+
+def slug_desde_titulo(titulo, maximo=40):
+    """Slug en minúsculas sin acentos, cortado en límite de palabra; 'iteracion' si no queda nada."""
+    palabras = re.sub(r"[^a-z0-9]+", "-", sin_acentos(titulo).lower()).strip("-").split("-")
+    slug = ""
+    for palabra in palabras:
+        candidato = (slug + "-" + palabra) if slug else palabra
+        if len(candidato) > maximo:
+            break
+        slug = candidato
+    return slug or "iteracion"
 
 
 def avanzar_planeacion(raiz, rol):
@@ -400,7 +417,9 @@ def avanzar_planeacion(raiz, rol):
         estado_cli(raiz, "init")
     tid, track = track_activo(raiz)
     if rol == "bsa" and existe("requerimientos.md") and not tid:
-        codigo, out, err = estado_cli(raiz, "crear", slug_desde_requerimientos(raiz))
+        titulo = titulo_desde_requerimientos(raiz)
+        args = ["crear", slug_desde_titulo(titulo)] + (["--titulo", titulo[:120]] if titulo else [])
+        codigo, out, err = estado_cli(raiz, *args)
         mensajes.append(out if codigo == 0 else "No se pudo crear el track: " + err)
         tid, track = track_activo(raiz)
     if track and track["estado"] == "borrador" and all(existe(f) for f in ENTREGABLES):
@@ -472,12 +491,28 @@ def avanzar_coder(raiz):
 def subagentstop(data, raiz, rol):
     if not perfil_valido(raiz):
         return []
-    if rol == "coder":
-        mensajes = verificar_coder(raiz)
-        return mensajes + avanzar_coder(raiz)
-    if rol in ("bsa", "arquitecto", "disenador"):
-        return avanzar_planeacion(raiz, rol)
-    return []
+    try:
+        if rol == "coder":
+            mensajes = verificar_coder(raiz)
+            return mensajes + avanzar_coder(raiz)
+        if rol in ("bsa", "arquitecto", "disenador"):
+            return avanzar_planeacion(raiz, rol)
+        return []
+    finally:
+        M.escribir_indice(raiz)  # el índice de memoria refleja siempre el estado vigente
+
+
+# --------------------------------------------------------------- SessionStart
+
+def sessionstart(data, raiz, rol):
+    """Puntero de arranque (<= 10.000 caracteres) como contexto de la conversación.
+
+    Se dispara en startup, resume, clear y compact (PreCompact no puede inyectar
+    contexto; tras compactar es SessionStart con source=compact el que lo repone).
+    """
+    if os.path.isdir(os.path.join(raiz, E.DIR_ESTADO)):
+        M.escribir_indice(raiz)
+    return P.generar(raiz)
 
 
 # ----------------------------------------------------------------------- Stop
@@ -496,8 +531,8 @@ def stop(data, raiz, rol):
 
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
-    if len(argv) != 1 or argv[0] not in ("pretooluse", "subagentstop", "stop"):
-        sys.stderr.write("Uso: devsquad_hook.py pretooluse|subagentstop|stop\n")
+    if len(argv) != 1 or argv[0] not in ("sessionstart", "pretooluse", "subagentstop", "stop"):
+        sys.stderr.write("Uso: devsquad_hook.py sessionstart|pretooluse|subagentstop|stop\n")
         return 1
     try:
         data = json.load(sys.stdin)
@@ -507,6 +542,11 @@ def main(argv=None):
         raiz = os.path.abspath(os.environ.get("CLAUDE_PROJECT_DIR") or data.get("cwd") or os.getcwd())
         if argv[0] == "pretooluse":
             pretooluse(data, raiz, rol)
+            return 0
+        if argv[0] == "sessionstart":
+            print(json.dumps({"hookSpecificOutput": {"hookEventName": "SessionStart",
+                                                     "additionalContext": sessionstart(data, raiz, rol)}},
+                             ensure_ascii=False))
             return 0
         mensajes = (subagentstop if argv[0] == "subagentstop" else stop)(data, raiz, rol)
         if mensajes:
