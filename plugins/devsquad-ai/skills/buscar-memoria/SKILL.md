@@ -1,5 +1,5 @@
 ---
-description: Recuperar la memoria del proyecto (decisiones, aprendizajes y tracks anteriores) sin cargarla toda — se lee el índice y solo el registro que importa. Usar cuando haga falta recordar qué se decidió sobre algo, si ya se resolvió un problema parecido, o qué pasó en un track anterior. No sirve para saber en qué se quedó el trabajo: eso lo dice el puntero de arranque y `.devsquad/estado.json`.
+description: Recuperar la memoria del proyecto (decisiones, aprendizajes y tracks anteriores) sin cargarla toda — se lee el índice y solo el registro que importa. Usar cuando haga falta recordar qué se decidió sobre algo, si ya se resolvió un problema parecido, o qué pasó en un track anterior. No sirve para saber en qué se quedó el trabajo (eso lo dicen el puntero de arranque y `.devsquad/estado.json`).
 ---
 
 # Buscar en la memoria del proyecto (nivel 1: índice)

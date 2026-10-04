@@ -276,6 +276,19 @@ class PruebasPrompts(unittest.TestCase):
         self.assertIn("puntero de arranque", t)
         self.assertIn("buscar-memoria", t)
 
+    def test_frontmatter_sin_dos_puntos_ni_almohadilla_sin_comillas(self):
+        """La CI valida el frontmatter como YAML (con pyyaml, que aquí no está): `clave: a: b` no es válido."""
+        for ruta, texto in self.textos():
+            if not texto.startswith("---\n"):
+                continue
+            for linea in texto[4:texto.index("\n---", 4)].split("\n"):
+                if ":" not in linea or linea.startswith((" ", "-")):
+                    continue
+                valor = linea.split(":", 1)[1].strip()
+                if valor and valor[0] not in "\"'":
+                    self.assertNotIn(": ", valor, "%s: %s" % (ruta, linea[:80]))
+                    self.assertNotIn(" #", valor, "%s: %s" % (ruta, linea[:80]))
+
     def test_la_skill_de_memoria_existe(self):
         self.assertTrue(os.path.exists(os.path.join(PLUGIN, "skills", "buscar-memoria", "SKILL.md")))
 
