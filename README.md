@@ -133,10 +133,23 @@ agentes de este plugin; bloquean con un mensaje que dice el paso que falta:
 - **Archivos protegidos** (los del perfil) y **secretos** (`.env*`, llaves).
 - **El coder no termina en rojo**: ejecuta los «Comandos de verificación» del
   perfil; tras 3 bloqueos seguidos escala a la persona.
+- **Revisión del resultado del coder**: como el coder tiene `Bash`
+  (`echo X > .env`, `sed -i`), al terminar se revisa lo que cambió en Git
+  respecto a lo que ya estaba cambiado al delegarle: un `.env*` real (aunque
+  esté en `.gitignore`), patrones de secretos o archivos protegidos
+  modificados. Bloquea con el mismo tope de 3 bloqueos.
 - Al terminar cada agente de planeación o el coder, el hook avanza el track con
   `devsquad-estado`; al terminar la sesión cierra el track si ya se puede.
 
 Requieren `python3`; si falta, los hooks fallan sin bloquear (límite conocido).
+
+> **Alcance de las compuertas.** Son **barandales contra errores del modelo,
+> no una frontera de seguridad**. Con `Bash` un agente (o alguien que lo
+> instruya) puede esquivarlas: la revisión del resultado atrapa lo habitual
+> pero no lo deliberado (un archivo fuera del proyecto, un secreto en un
+> formato desconocido, un comando que reescribe el historial de Git, etc.).
+> Para aislar de verdad al agente hace falta aislamiento del sistema operativo
+> (usuario sin privilegios, sin credenciales a su alcance), no hooks.
 
 ### Script `devsquad-estado`
 

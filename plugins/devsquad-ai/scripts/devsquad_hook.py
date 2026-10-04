@@ -19,6 +19,7 @@ if sys.version_info < (3, 8):
 
 import contextlib
 import fnmatch
+import hashlib
 import io
 import json
 import os
@@ -284,6 +285,103 @@ def pretooluse(data, raiz, rol):
             compuerta_orden_de_fases(raiz, destino)
         if destino == "coder":
             compuerta_track_para_coder(raiz)
+            guardar_linea_base(raiz)
+
+
+# ------------------------------------------------- resultado del coder (Git)
+
+def git(raiz, *args):
+    """Salida de git como bytes, o None si git no está o no es un repositorio."""
+    try:
+        r = subprocess.run(["git", "-C", raiz] + list(args), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
+    except OSError:
+        return None
+    return r.stdout if r.returncode == 0 else None
+
+
+def rutas_cambiadas(raiz):
+    """Rutas con cambios según Git (modificadas, nuevas, borradas) más los .env* ignorados.
+
+    Los .env* suelen estar en .gitignore, así que `git status` no los ve.
+    Devuelve None si no se puede consultar Git.
+    """
+    estado = git(raiz, "status", "--porcelain=v1", "-z", "--untracked-files=all")
+    if estado is None:
+        return None
+    rutas, entradas = set(), estado.decode("utf-8", "replace").split("\0")
+    i = 0
+    while i < len(entradas):
+        e = entradas[i]
+        i += 1
+        if len(e) < 4:
+            continue
+        rutas.add(e[3:])
+        if e[0] in "RC":  # renombrado/copiado: la ruta de origen va en la entrada siguiente
+            if i < len(entradas) and entradas[i]:
+                rutas.add(entradas[i])
+            i += 1
+    ignorados = git(raiz, "ls-files", "-o", "-i", "--exclude-standard", "-z") or b""
+    for r in ignorados.decode("utf-8", "replace").split("\0"):
+        if r and es_env_secreto(r):
+            rutas.add(r)
+    return {r for r in rutas if not r.startswith(E.DIR_ESTADO + "/")}
+
+
+def huella(raiz, rel):
+    try:
+        with open(os.path.join(raiz, rel), "rb") as f:
+            return hashlib.sha1(f.read()).hexdigest()
+    except OSError:
+        return "borrado"
+
+
+def instantanea(raiz):
+    """{ruta: huella} de lo que ya está cambiado ahora, o None sin Git."""
+    rutas = rutas_cambiadas(raiz)
+    return None if rutas is None else {r: huella(raiz, r) for r in sorted(rutas)}
+
+
+def guardar_linea_base(raiz):
+    """Al delegar en el coder: lo que ya estaba cambiado no se le atribuye."""
+    base = instantanea(raiz)
+    if base is None:
+        return
+    estado = E.cargar_estado(raiz)
+    estado["linea_base_git"] = base
+    E.escribir_json(E.ruta_estado(raiz), estado)
+
+
+def revisar_cambios(raiz):
+    """Revisa lo que el coder cambió respecto a la línea base.
+
+    Devuelve (violaciones, avisos). Atrapa lo que Bash hace sin pasar por
+    Write/Edit (`echo X > .env`, `sed -i`...).
+    """
+    actual = instantanea(raiz)
+    if actual is None:
+        return [], ["Aviso: no es un repositorio Git (o falta git); no se pudo revisar el resultado del coder "
+                    "contra secretos y archivos protegidos."]
+    base = E.cargar_estado(raiz).get("linea_base_git") or {}
+    protegidos = rutas_protegidas(perfil_texto(raiz))
+    violaciones = []
+    for rel, h in actual.items():
+        if base.get(rel) == h:
+            continue
+        existe = h != "borrado"
+        patron = es_protegido(rel, protegidos)
+        if patron:
+            violaciones.append("%s: archivo protegido por el perfil (`%s`) modificado. Revierte el cambio "
+                               "(`git checkout -- %s`) y pregunta a la persona." % (rel, patron, rel))
+        if existe and es_env_secreto(rel):
+            violaciones.append("%s: archivo de secretos. Elimínalo y deja solo un `.env.example` con los nombres "
+                               "de las variables." % rel)
+        elif existe:
+            texto = leer_texto(os.path.join(raiz, rel)) or ""
+            for patron_s, que in PATRONES_SECRETOS:
+                if patron_s.search(texto):
+                    violaciones.append("%s: parece incluir %s. Quita el valor y usa una variable de entorno." % (rel, que))
+                    break
+    return violaciones, []
 
 
 # --------------------------------------------------------------- SubagentStop
@@ -327,25 +425,30 @@ def ejecutar_verificacion(raiz, comandos):
 
 
 def verificar_coder(raiz):
-    """Bloquea (Bloqueo) si falla la verificación; devuelve mensajes informativos si no."""
+    """Bloquea (Bloqueo) si falla la verificación o el resultado viola las reglas.
+
+    Devuelve mensajes informativos si no hay nada que bloquear. Los fallos de
+    verificación y las violaciones comparten el mismo tope de bloqueos.
+    """
+    violaciones, avisos = revisar_cambios(raiz)
     comandos = comandos_verificacion(perfil_texto(raiz))
     if not comandos:
-        return ["Aviso: el perfil no declara comandos de verificación; no se pudo comprobar el trabajo del coder. "
-                "Agrega la sección «Comandos de verificación» a %s." % PERFIL]
-    fallos = ejecutar_verificacion(raiz, comandos)
+        avisos.append("Aviso: el perfil no declara comandos de verificación; no se pudo comprobar el trabajo del "
+                      "coder. Agrega la sección «Comandos de verificación» a %s." % PERFIL)
+    fallos = ejecutar_verificacion(raiz, comandos) if comandos else []
     estado = E.cargar_estado(raiz)
     contadores = estado.setdefault("contadores", {})
     previos = contadores.get("stop_bloqueos", 0)
-    if not fallos:
+    if not fallos and not violaciones:
         contadores["stop_bloqueos"] = 0
         E.escribir_json(E.ruta_estado(raiz), estado)
-        return []
-    detalle = "\n".join("- %s (`%s`):\n%s" % f for f in fallos)
+        return avisos
+    detalle = "\n".join(["- %s" % v for v in violaciones] + ["- %s (`%s`):\n%s" % f for f in fallos])
     if previos >= MAX_BLOQUEOS:
         contadores["stop_bloqueos"] = 0
         E.escribir_json(E.ruta_estado(raiz), estado)
         return ["La verificación sigue fallando tras %d intentos; se deja terminar al coder y se escala a la persona. "
-                "Siguiente paso: pregúntale cómo proceder (ask_human). Fallos:\n%s" % (MAX_BLOQUEOS, detalle)]
+                "Siguiente paso: pregúntale cómo proceder (ask_human). Problemas:\n%s" % (MAX_BLOQUEOS, detalle)]
     contadores["stop_bloqueos"] = previos + 1
     E.escribir_json(E.ruta_estado(raiz), estado)
     raise Bloqueo("La verificación falló (intento %d de %d); no puedes terminar con el código en rojo. "

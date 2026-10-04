@@ -363,6 +363,135 @@ class PruebasSubagentStopCoder(Base):
         self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "en_revision")
 
 
+class PruebasResultadoDelCoder(Base):
+    """El coder tiene Bash: `echo X > .env` o `sed -i` no pasan por Write/Edit.
+
+    El SubagentStop revisa lo que cambió en Git. Son barandales contra errores
+    del modelo, no una frontera de seguridad frente a Bash.
+    """
+
+    def git_(self, *args):
+        subprocess.run(["git", "-C", self.p] + list(args), check=True, capture_output=True)
+
+    def setUp(self):
+        super().setUp()
+        self.perfil()
+        self.docs("requerimientos.md", "arquitectura.md", "diseno.md")
+        self.escribir("src/runtime/motor.py", "x = 1\n")
+        self.escribir("config/app.yaml", "a: 1\n")
+        self.escribir("src/app.py", "y = 1\n")
+        self.escribir(".gitignore", ".env\n")
+        self.git_("init", "-q")
+        self.git_("config", "user.email", "t@example.com")
+        self.git_("config", "user.name", "Prueba")
+        self.git_("add", "-A")
+        self.git_("commit", "-q", "-m", "base")
+        self.track()
+
+    def delegar(self):
+        self.delega("coder", agente="orquestador")
+
+    def stop(self, esperado=0):
+        return self.hook("subagentstop", {"hook_event_name": "SubagentStop", "agent_id": "c1"},
+                         agente="coder", esperado=esperado)
+
+    def contador(self):
+        return self.leer_json(".devsquad/estado.json")["contadores"]["stop_bloqueos"]
+
+    def test_env_creado_por_bash_aunque_este_en_gitignore(self):
+        self.delegar()
+        self.escribir(".env", "TOKEN=1\n")  # equivale a `echo TOKEN=1 > .env`
+        r = self.stop(esperado=2)
+        self.assertIn(".env", r.stderr)
+        self.assertIn("secretos", r.stderr)
+        os.remove(self.ruta(".env"))
+        self.stop()
+
+    def test_env_example_no_se_marca(self):
+        self.delegar()
+        self.escribir(".env.example", "TOKEN=\n")
+        self.stop()
+
+    def test_env_que_ya_existia_antes_no_se_atribuye_al_coder(self):
+        self.escribir(".env", "TOKEN=real\n")  # la persona ya lo tenía
+        self.delegar()
+        self.stop()
+        self.escribir(".env", "TOKEN=otro\n")  # pero si el coder lo cambia, sí
+        self.stop(esperado=2)
+
+    def test_protegido_modificado_con_sed(self):
+        self.delegar()
+        self.escribir("src/runtime/motor.py", "x = 2\n")  # equivale a `sed -i`
+        r = self.stop(esperado=2)
+        self.assertIn("src/runtime/motor.py", r.stderr)
+        self.assertIn("git checkout", r.stderr)
+
+    def test_protegido_por_patron_y_archivo_nuevo(self):
+        self.delegar()
+        self.escribir("config/otro.yaml", "b: 2\n")
+        self.stop(esperado=2)
+        os.remove(self.ruta("config/otro.yaml"))
+        self.escribir("src/runtime/nuevo.py", "z = 1\n")
+        self.stop(esperado=2)
+
+    def test_protegido_borrado(self):
+        self.delegar()
+        os.remove(self.ruta("config/app.yaml"))
+        self.stop(esperado=2)
+
+    def test_protegido_modificado_antes_de_delegar_no_se_atribuye(self):
+        self.escribir("src/runtime/motor.py", "x = 99\n")  # cambio previo de la persona
+        self.delegar()
+        self.stop()
+
+    def test_secreto_en_el_contenido_de_un_archivo_nuevo(self):
+        self.delegar()
+        self.escribir("src/config.py", "KEY = 'AKIAABCDEFGHIJKLMNOP'\n")
+        r = self.stop(esperado=2)
+        self.assertIn("src/config.py", r.stderr)
+        self.assertIn("AWS", r.stderr)
+
+    def test_cambio_normal_pasa(self):
+        self.delegar()
+        self.escribir("src/app.py", "y = 2\n")
+        self.escribir("src/nuevo.py", "z = 3\n")
+        self.stop()
+
+    def test_los_archivos_de_devsquad_no_cuentan(self):
+        self.delegar()
+        self.escribir(".devsquad/arquitectura.md", "# cambiado AKIAABCDEFGHIJKLMNOP\n")
+        self.stop()
+
+    def test_comparte_el_tope_de_tres_bloqueos(self):
+        self.delegar()
+        self.escribir(".env", "A=1\n")
+        for _ in range(3):
+            self.stop(esperado=2)
+        self.assertEqual(self.contador(), 3)
+        r = self.stop()
+        self.assertIn("ask_human", json.loads(r.stdout)["systemMessage"])
+        self.assertEqual(self.contador(), 0)
+
+    def test_violacion_y_verificacion_en_rojo_se_reportan_juntas(self):
+        self.perfil(PERFIL.replace("- Lint: `true`", "- Lint: `echo LINT-ROJO; exit 1`"))
+        self.delegar()
+        self.escribir(".env", "A=1\n")
+        r = self.stop(esperado=2)
+        self.assertIn(".env", r.stderr)
+        self.assertIn("LINT-ROJO", r.stderr)
+
+    def test_sin_git_avisa_y_no_bloquea(self):
+        shutil.rmtree(self.ruta(".git"))
+        r = self.stop()
+        self.assertIn("no es un repositorio Git", json.loads(r.stdout)["systemMessage"])
+
+    def test_sin_comandos_las_violaciones_bloquean_igual(self):
+        self.perfil(PERFIL.split("## Comandos")[0] + "_Última actualización: hoy_\n")
+        self.delegar()
+        self.escribir("src/runtime/motor.py", "x = 3\n")
+        self.stop(esperado=2)
+
+
 class PruebasStop(Base):
     def stop(self, **extra):
         datos = {"hook_event_name": "Stop"}

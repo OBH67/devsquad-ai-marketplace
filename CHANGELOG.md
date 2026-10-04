@@ -49,6 +49,12 @@ completa con cada uno y se cierra con la versión en el último.
     (sección nueva «Comandos de verificación»); si no están declarados avisa y
     no bloquea; tope de 3 bloqueos seguidos (contador en `estado.json`) y
     luego escala a la persona.
+  - Revisión del resultado del coder (tiene `Bash`): al terminar se comparan
+    los cambios de Git contra la línea base guardada al delegarle
+    (`linea_base_git` en `estado.json`) y se bloquea, con el mismo tope de 3,
+    si hay un `.env*` real (también ignorado por Git), patrones de secretos o
+    archivos protegidos modificados. Son barandales contra errores del modelo,
+    no una frontera de seguridad frente a `Bash`.
   - Los hooks avanzan el track con `devsquad-estado`: el BSA lo crea, el
     track pasa a `listo` con los tres entregables y tareas en `plan.md`, el
     coder lo lleva a `en_revision` con las tareas completas y `Stop` lo cierra.
@@ -61,8 +67,12 @@ completa con cada uno y se cierra con la versión en el último.
   reales el track no pasa a `listo`.
 
 ### Pendiente (fuera del alcance de este PR)
+- PR 4: el Arquitecto escribe las tareas de `plan.md` (cambio de su prompt),
+  probado con un track real hasta `listo`.
 - PR 5: comando `devsquad-estado cancelar` (pide motivo, libera el lugar único
   y conserva el historial).
+- PR 5: huella de los comandos de verificación del perfil, con confirmación de
+  la persona si cambia.
 - El texto del Orquestador y la skill `comunicacion-progreso` siguen pidiendo
   `TodoWrite`; se reescriben con el recorte del prompt del Orquestador.
 - `preparar-entorno` pide `Bash` al Orquestador, que no lo tiene (decisión:
