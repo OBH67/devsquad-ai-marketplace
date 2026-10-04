@@ -75,8 +75,10 @@ PLANTILLA_PLAN = """# Plan · {titulo}
 Una tarea por línea. Estados: `[ ]` pendiente, `[~]` en curso, `[x]` hecha.
 Una tarea solo se marca hecha con el commit que la implementa:
 `- [x] 1 Texto de la tarea (commit abc1234)`.
+El track no pasa a `listo` hasta que este archivo tenga al menos una tarea.
 
-- [ ] 1 (Primera tarea)
+## Tareas
+
 """
 
 

@@ -38,6 +38,11 @@ de detalle.
      DevSquad AI debería respetar? (ej. siempre usar cierto proveedor, no
      usar cierto tipo de dato, cumplir alguna política interna)
 
+   - **Comandos de verificación** (opcional): ¿con qué comandos se revisa
+     que el código funciona? (por ejemplo el linter y las pruebas). Si la
+     persona no sabe, déjalo en "N/A": el Coder los propondrá cuando haya
+     un stack. Guarda cada comando tal cual, entre acentos graves.
+
    Las preguntas de **Stack** y **Archivos protegidos** son independientes
    del nivel técnico: hazlas siempre, a cualquier persona. Alguien técnico
    puede querer igual que le propongan el stack, y alguien no técnico puede
@@ -66,6 +71,14 @@ de detalle.
 - **Archivos protegidos**: [lista de rutas o patrones que no deben
   modificarse ni regenerarse, o "N/A"]
 - **Reglas de negocio / contexto de empresa**: [texto libre, o "N/A"]
+
+## Comandos de verificación
+
+Los ejecuta el hook de DevSquad AI antes de dejar terminar al Coder. Un
+comando por línea, entre acentos graves; si no hay, escribe `N/A`.
+
+- Lint: `[comando]`
+- Pruebas: `[comando]`
 
 _Última actualización: [fecha]_
 ```

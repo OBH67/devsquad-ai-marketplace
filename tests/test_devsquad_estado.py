@@ -144,6 +144,12 @@ class PruebasTracks(Base):
         self.ejecutar("init")
         self.ejecutar("crear", "Con Espacios", esperado=1)
 
+    def test_el_plan_nuevo_no_trae_tareas_de_relleno(self):
+        self.ejecutar("init")
+        self.ejecutar("crear", "uno")
+        r = self.ejecutar("transicion", "listo", esperado=1)  # sin escribir tareas reales
+        self.assertIn("sin tareas", r.stderr)
+
     def test_listo_exige_tareas(self):
         self.ejecutar("init")
         self.ejecutar("crear", "uno")

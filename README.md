@@ -118,6 +118,26 @@ Contiene:
   `[x]`, cada una hecha con el commit que la implementa). Solo hay un track
   abierto a la vez: no se abre otro hasta cerrar el actual.
 
+### Compuertas (hooks del plugin)
+
+Lo obligatorio lo hace cumplir el código, no la memoria del modelo
+(`hooks/hooks.json` + `scripts/devsquad_hook.py`). Solo actúan sobre los
+agentes de este plugin; bloquean con un mensaje que dice el paso que falta:
+
+- **Perfil primero**: sin `.devsquad/perfil.md` no se delega, escribe ni ejecuta.
+- **Orden de fases**: BSA → Arquitecto → Diseñador → Coder (según los
+  entregables en `.devsquad/`). Delegar en el coder pasa el track de `listo`
+  a `en_progreso`.
+- **Track**: el código del proyecto solo se escribe con un track en
+  `en_progreso` o `correcciones`.
+- **Archivos protegidos** (los del perfil) y **secretos** (`.env*`, llaves).
+- **El coder no termina en rojo**: ejecuta los «Comandos de verificación» del
+  perfil; tras 3 bloqueos seguidos escala a la persona.
+- Al terminar cada agente de planeación o el coder, el hook avanza el track con
+  `devsquad-estado`; al terminar la sesión cierra el track si ya se puede.
+
+Requieren `python3`; si falta, los hooks fallan sin bloquear (límite conocido).
+
 ### Script `devsquad-estado`
 
 Cambia y valida ese estado: `devsquad-estado init | crear | transicion |
