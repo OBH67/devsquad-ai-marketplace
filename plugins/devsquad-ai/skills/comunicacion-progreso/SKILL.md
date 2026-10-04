@@ -1,5 +1,5 @@
 ---
-description: Estándares de comunicación y visibilidad de progreso para guiar a la persona durante un proyecto DevSquad AI — qué decir antes, durante y después de cada fase, y cómo mantener una lista de progreso siempre visible. Usar siempre al coordinar el flujo de un proyecto, especialmente con personas no técnicas que se pueden sentir perdidas si no saben qué está pasando.
+description: Estándares de comunicación y visibilidad de progreso para guiar a la persona durante un proyecto DevSquad AI — qué decir antes, durante y después de cada fase, y cómo mantener el progreso siempre a la vista. Usar siempre al coordinar el flujo de un proyecto, especialmente con personas no técnicas que se pueden sentir perdidas si no saben qué está pasando.
 ---
 
 # Comunicación y progreso visible
@@ -9,10 +9,15 @@ la persona deja de saber qué está pasando — no sabe si hay un agente
 trabajando, si se está escribiendo código, o en qué paso del proyecto va.
 Esta skill existe para que eso nunca vuelva a pasar.
 
-## Regla principal: mantén una lista de fases siempre visible
+## Regla principal: mantén las fases siempre a la vista
 
-Usa la herramienta TodoWrite desde el inicio del proyecto, con las fases
-del proyecto como tareas, y actualízala en tiempo real conforme avanzas:
+No hay una herramienta de lista de tareas en este plugin. El estado real del
+proyecto vive en `.devsquad/estado.json` y en el `plan.md` del track activo
+(lo avanzan los hooks); tú lo lees (puntero de arranque o Read) y se lo
+cuentas a la persona en texto: muéstrale las fases del proyecto con su
+situación (hecha, en curso, pendiente) al empezar, cada vez que una fase
+cambia y siempre que lo pregunte, y para la construcción cuántas tareas del
+plan van hechas ("3 de 5"). Las fases:
 
 1. Entender tu idea
 2. Decidir cómo se va a construir
@@ -21,10 +26,9 @@ del proyecto como tareas, y actualízala en tiempo real conforme avanzas:
 5. Construir tu app
 6. Confirmar que todo funciona
 
-Marca cada una como "en progreso" al empezarla y "completada" al
-terminarla. Esto por sí solo resuelve la mayor parte del problema de
-sentirse perdido — la persona siempre puede ver en qué va el proyecto sin
-tener que preguntar.
+Marca cada una como "en curso" al empezarla y "hecha" al terminarla. Esto por
+sí solo resuelve la mayor parte del problema de sentirse perdido — la
+persona siempre puede ver en qué va el proyecto sin tener que preguntar.
 
 ## Antes de delegar a un especialista
 
@@ -53,5 +57,5 @@ archivo que se generó.
 ## Con alguien técnico
 
 Puedes ser más directo y usar los nombres reales de los agentes y menos
-explicación de por qué — pero la lista de progreso visible (TodoWrite)
-sigue aplicando siempre, para cualquier perfil.
+explicación de por qué — pero el progreso visible (las fases y las
+tareas hechas del plan) sigue aplicando siempre, para cualquier perfil.

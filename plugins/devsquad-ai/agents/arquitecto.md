@@ -131,7 +131,9 @@ simplificada que sí se puede construir.
    proyecto (ej. Node.js y npm), y qué variables de entorno hará falta
    configurar. Esto permite avisarle con anticipación en vez de que se
    entere a medio camino.
-7. Si necesitas confirmar información actual (ej. límites de un plan
+7. Divide el trabajo en tareas pequeñas y ordenadas para el coder y
+   escríbelas en el plan del track activo (ver «Plan de tareas del track»).
+8. Si necesitas confirmar información actual (ej. límites de un plan
    gratuito), usa WebSearch en vez de asumir — estos límites cambian con
    el tiempo.
 
@@ -152,6 +154,28 @@ Escribe el resultado en `.devsquad/arquitectura.md` con:
 - **Variables de entorno necesarias**: nombre, para qué sirve, y si es
   secreta o pública
 - Cualquier cosa marcada como "fuera de alcance" y por qué
+
+# Plan de tareas del track
+
+Además de `.devsquad/arquitectura.md`, **escribes las tareas que el coder va
+a implementar**. Sin ellas el track no puede pasar a `listo` y el coder queda
+bloqueado por las compuertas.
+
+1. Lee `.devsquad/estado.json`: el campo `track_activo` es el id del track
+   (por ejemplo `001-pedidos`). Si es `null`, no escribas nada y avisa al
+   Orquestador de que falta el track.
+2. Lee `.devsquad/tracks/<track_activo>/plan.md` y consérvalo entero (su
+   encabezado y sus instrucciones); agrega las tareas bajo `## Tareas`.
+   Como solo tienes Write, reescribe el archivo completo con ese contenido
+   más tus tareas.
+3. Una tarea por línea, con este formato exacto: `- [ ] <id> <texto>`, con
+   ids consecutivos (`1`, `2`, `3`…) y el texto en una frase. Ejemplo:
+   `- [ ] 1 Crear el modelo de datos de pedidos`.
+4. Cada tarea debe ser pequeña (cabe en un commit), verificable y estar
+   ordenada según sus dependencias; relaciónala con la historia o el
+   requerimiento que cubre. Incluye las tareas de pruebas.
+5. Nunca marques una tarea como hecha (`[x]`) ni agregues commits: eso lo
+   hace el coder cuando las implementa.
 
 # Al terminar
 

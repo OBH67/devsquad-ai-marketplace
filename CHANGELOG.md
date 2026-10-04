@@ -62,13 +62,29 @@ completa con cada uno y se cierra con la versión en el último.
   el cierre exige el estado `verificado` (las fases B y C lo endurecen solas).
 - La skill `iniciar-proyecto` pregunta y guarda los comandos de verificación.
 
+### Agregado (PR 4: arranque atómico y memoria nivel 1)
+- Hook `SessionStart` (`startup|resume|clear|compact`) que inyecta un puntero
+  generado por script (`devsquad_puntero.py`, máximo 10.000 caracteres) con el
+  track activo, la siguiente tarea, el último commit, bloqueos, memoria y el
+  siguiente paso sugerido. No se usa `PreCompact`: no puede inyectar contexto.
+- Memoria nivel 1: `devsquad_memoria.py` genera `.devsquad/memoria/indice.md`
+  (decisiones, aprendizajes y tracks, con ruta) que el Orquestador lee con
+  Read; skill `buscar-memoria`. El índice se regenera al arrancar y cuando
+  termina un agente.
+- El Arquitecto escribe las tareas del `plan.md` del track activo.
+
+### Cambiado (PR 4)
+- Prompts alineados con la realidad: el Orquestador, la skill
+  `comunicacion-progreso` y el Coder ya no mencionan `TodoWrite` ni
+  `estado.md`; el estado vive en `.devsquad/estado.json` y lo avanzan los
+  hooks. El Coder hace un commit por tarea y la marca con
+  `devsquad-estado tarea <id> hecha --commit <sha>`.
+
 ### Cambiado
 - El `plan.md` de un track nuevo ya no trae una tarea de relleno: sin tareas
   reales el track no pasa a `listo`.
 
 ### Pendiente (fuera del alcance de este PR)
-- PR 4: el Arquitecto escribe las tareas de `plan.md` (cambio de su prompt),
-  probado con un track real hasta `listo`.
 - PR 5: comando `devsquad-estado cancelar` (pide motivo, libera el lugar único
   y conserva el historial).
 - PR 5: huella de los comandos de verificación del perfil, con confirmación de

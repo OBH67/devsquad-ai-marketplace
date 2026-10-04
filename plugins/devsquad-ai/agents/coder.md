@@ -95,5 +95,11 @@ o no visible el problema a simple vista.
 
 # Al terminar cada incremento
 
-Deja una nota breve en `.devsquad/estado.md` sobre qué se implementó y qué
-sigue, y entrega el control de vuelta al Orquestador.
+Haz un commit por cada tarea del plan que termines
+(`.devsquad/tracks/<track activo>/plan.md`; el track activo está en
+`.devsquad/estado.json`) y márcala con
+`devsquad-estado tarea <id> hecha --commit <sha>`. Una tarea solo cuenta como
+hecha con el commit que la implementa. No edites a mano `estado.json` ni el
+`plan.md`: el estado del track lo avanzan los hooks cuando terminas con la
+verificación en verde y todas las tareas hechas. Entrega el control de
+vuelta al Orquestador con un resumen breve de qué se implementó y qué sigue.

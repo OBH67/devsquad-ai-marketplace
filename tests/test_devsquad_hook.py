@@ -257,6 +257,17 @@ class PruebasSubagentStopPlaneacion(Base):
         self.assertIn("001-sistema-de-pedidos-y-envios", json.loads(r.stdout)["systemMessage"])
         self.assertEqual(self.leer_json(".devsquad/estado.json")["track_activo"], "001-sistema-de-pedidos-y-envios")
 
+    def test_el_titulo_y_el_slug_no_arrastran_el_prefijo_ni_cortan_palabras(self):
+        self.escribir(".devsquad/requerimientos.md", "# Requerimientos — Registro de gastos personales con categorías\n")
+        self.stop("bsa")
+        track = self.leer_json(".devsquad/tracks/001-registro-de-gastos-personales-con/track.json")
+        self.assertEqual(track["titulo"], "Registro de gastos personales con categorías")
+
+    def test_requerimientos_sin_titulo_usa_iteracion(self):
+        self.escribir(".devsquad/requerimientos.md", "sin encabezado\n")
+        self.stop("bsa")
+        self.assertEqual(self.leer_json(".devsquad/estado.json")["track_activo"], "001-iteracion")
+
     def test_bsa_sin_entregable_no_crea_nada(self):
         r = self.stop("bsa")
         self.assertEqual(r.stdout.strip(), "")
@@ -531,11 +542,11 @@ class PruebasStop(Base):
 
 
 class PruebasConfiguracionDelPlugin(unittest.TestCase):
-    def test_hooks_json_tiene_la_clave_hooks_y_los_tres_eventos(self):
+    def test_hooks_json_tiene_la_clave_hooks_y_los_cuatro_eventos(self):
         with open(os.path.join(PLUGIN, "hooks", "hooks.json"), encoding="utf-8") as f:
             cfg = json.load(f)
         self.assertEqual(list(cfg.keys()), ["hooks"])
-        self.assertEqual(set(cfg["hooks"]), {"PreToolUse", "SubagentStop", "Stop"})
+        self.assertEqual(set(cfg["hooks"]), {"SessionStart", "PreToolUse", "SubagentStop", "Stop"})
         matcher = cfg["hooks"]["PreToolUse"][0]["matcher"]
         for tool in ("Agent", "Write", "Edit", "Bash"):
             self.assertIn(tool, matcher.split("|"))
