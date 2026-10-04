@@ -45,3 +45,11 @@ jobs:
 
           sys.exit(0 if ok else 1)
           EOF
+
+  pruebas-comportamiento:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Pruebas de devsquad-estado (unittest)
+        run: python3 -m unittest discover -s tests -v
