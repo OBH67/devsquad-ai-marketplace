@@ -3,8 +3,7 @@ name: Validar plugin DevSquad AI
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
+  pull_request:  # sin filtro de rama: también corre en PRs apilados sobre otra rama
 
 jobs:
   validate-syntax:
