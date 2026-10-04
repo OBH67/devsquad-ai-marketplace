@@ -1,9 +1,9 @@
 # Changelog
 
-## [Sin publicar] — 0.6.0 en curso (fase A del rediseño)
+## [0.6.0] — 2026-10-04 — Fase A del rediseño: cimientos (estado, compuertas, aprobaciones)
 
-La 0.6.0 se construye en varios pull requests apilados; esta sección se
-completa con cada uno y se cierra con la versión en el último.
+Lo obligatorio pasa a hacerlo cumplir el código, no la memoria del modelo.
+Construida en cinco pull requests apilados (PR 1 a 5, abajo).
 
 ### Cambiado (PR 1: modelos, esfuerzo y herramientas)
 - Modelo y esfuerzo fijados por agente en el frontmatter (`model` y `effort`):
@@ -81,7 +81,7 @@ completa con cada uno y se cierra con la versión en el último.
   hooks. El Coder hace un commit por tarea y la marca con
   `devsquad-estado tarea <id> hecha --commit <sha>`.
 
-### Cambiado
+### Cambiado (PR 3)
 - El `plan.md` de un track nuevo ya no trae una tarea de relleno: sin tareas
   reales el track no pasa a `listo`.
 
