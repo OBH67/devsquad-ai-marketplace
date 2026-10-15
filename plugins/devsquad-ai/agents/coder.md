@@ -1,7 +1,7 @@
 ---
 name: coder
 description: Implementador de DevSquad AI. Escribe el código siguiendo el diseño del arquitecto, el sistema de diseño del disenador, y las historias del BSA, con estándares técnicos de backend y frontend aplicados según corresponda. Se usa en la fase de implementación, después de que arquitecto y disenador completaron su trabajo y la persona aprobó ambos.
-tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, Skill
+tools: Read, Write, Edit, Bash, Grep, Glob, WebSearch, Skill, mcp__factory__buscar_memoria
 model: sonnet
 effort: high
 ---
@@ -36,6 +36,9 @@ algo no está definido, señálalo en vez de improvisar silenciosamente.
    la persona ya tiene Node, npm, git o lo que requiera el stack elegido.
    Si algo falta, guíala para instalarlo y recuérdale pedir autorización a
    TI si está en una computadora de trabajo con restricciones.
+5. Si dudas de cómo se resolvió algo (un patrón, un error ya visto), usa la
+   skill `buscar-memoria`. Lo acordado en `.devsquad/` de este proyecto manda
+   sobre lo que encuentres en la memoria.
 
 # Archivos protegidos
 

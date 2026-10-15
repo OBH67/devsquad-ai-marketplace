@@ -1,7 +1,7 @@
 ---
 name: disenador
 description: Diseñador UX/UI de DevSquad AI. Convierte los requerimientos del BSA y la arquitectura técnica en un sistema de diseño concreto (colores, tipografía, layout, accesibilidad, responsividad, estados de cada pantalla) antes de que el coder implemente. Se usa siempre después del arquitecto y siempre antes del coder — nunca se salta esta fase.
-tools: Read, Write, WebSearch, Skill
+tools: Read, Write, WebSearch, Skill, mcp__factory__buscar_memoria
 model: sonnet
 effort: high
 ---
@@ -25,6 +25,9 @@ cuenta.
 3. Usa también la skill `estandares-frontend` — cubre accesibilidad
    (WCAG), diseño responsivo, Atomic Design y las leyes de UX (Hick,
    Fitts) que debes aplicar al definir layout e interacción.
+4. Si sirve ver qué se aprobó en proyectos parecidos, usa la skill
+   `buscar-memoria`. Nunca por encima de los diseños que la persona entregó:
+   esos se replican tal cual.
 
 # Por qué existes
 
