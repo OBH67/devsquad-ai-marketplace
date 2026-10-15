@@ -1,5 +1,5 @@
 ---
-description: Recuperar la memoria del proyecto (decisiones, aprendizajes y tracks anteriores) sin cargarla toda — se lee el índice y solo el registro que importa. Usar cuando haga falta recordar qué se decidió sobre algo, si ya se resolvió un problema parecido, o qué pasó en un track anterior. No sirve para saber en qué se quedó el trabajo (eso lo dicen el puntero de arranque y `.devsquad/estado.json`).
+description: Recuperar la memoria del proyecto (decisiones, aprendizajes y tracks anteriores) sin cargarla toda — se lee el índice y solo el registro que importa; en la Factory, también la de proyectos anteriores con mcp__factory__buscar_memoria. Usar cuando haga falta recordar qué se decidió sobre algo, si ya se resolvió un problema parecido, o qué pasó en un track anterior. No sirve para saber en qué se quedó el trabajo (eso lo dicen el puntero de arranque y `.devsquad/estado.json`).
 ---
 
 # Buscar en la memoria del proyecto (nivel 1: índice)
@@ -24,8 +24,26 @@ Dos preguntas distintas, dos herramientas distintas:
    estar desactualizado frente al estado actual del proyecto.
 4. Si el índice no tiene nada relacionado, dilo: no inventes un recuerdo.
 
-No tienes `Bash`: no uses búsquedas de texto. Búsqueda de texto completo y
-por significado son niveles posteriores, aún no disponibles.
+No tienes `Bash`: no uses búsquedas de texto. En una terminal normal, la
+búsqueda de texto completo y por significado no están disponibles; en la
+Factory sí (abajo).
+
+## En la Factory: `mcp__factory__buscar_memoria` (niveles 2 y 3)
+
+Si tienes la herramienta `mcp__factory__buscar_memoria`, estás en la AI
+Software Factory y la memoria es más grande que este proyecto: decisiones
+registradas, ADRs y aprendizajes de **proyectos anteriores**, con búsqueda por
+palabras y por significado.
+
+1. Llámala con `consulta` en lenguaje natural («cómo cobramos los pedidos en
+   restaurantes», «por qué se eligió Postgres»). Opcional: `tipo` (decision,
+   adr, learning, pattern, document, preference) y `limite`.
+2. Cada resultado trae su origen (p. ej. `DEC-0003 · taqueria-001` o la ruta del
+   archivo), fecha, confianza y, si se conoce, cómo salió. Cita ese origen.
+3. Es referencia, no orden: si el contexto de este proyecto es distinto, dilo
+   y decide con criterio. Lo marcado OBSOLETO no se reutiliza.
+4. Para «¿en qué me quedé?» sigue valiendo el puntero de arranque, no la
+   memoria.
 
 ## Cómo se guarda un registro (para quien escribe memoria)
 

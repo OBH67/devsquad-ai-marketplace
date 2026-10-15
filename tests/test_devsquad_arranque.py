@@ -308,6 +308,17 @@ class PruebasPrompts(unittest.TestCase):
         self.assertIn("puntero de arranque", t)
         self.assertIn("buscar-memoria", t)
 
+    def test_los_agentes_pueden_usar_la_memoria_de_la_factory(self):
+        """La lista `tools:` es cerrada: sin el nombre, la herramienta MCP de la Factory no llega al agente."""
+        for agente in ("orquestador", "arquitecto", "bsa", "disenador", "coder"):
+            with open(os.path.join(PLUGIN, "agents", f"{agente}.md"), encoding="utf-8") as f:
+                t = f.read()
+            tools = [l for l in t.split("\n") if l.startswith("tools:")][0]
+            self.assertIn("mcp__factory__buscar_memoria", tools, agente)
+            self.assertIn("buscar-memoria", t, agente)
+        with open(os.path.join(PLUGIN, "skills", "buscar-memoria", "SKILL.md"), encoding="utf-8") as f:
+            self.assertIn("mcp__factory__buscar_memoria", f.read())
+
     def test_frontmatter_sin_dos_puntos_ni_almohadilla_sin_comillas(self):
         """La CI valida el frontmatter como YAML (con pyyaml, que aquí no está): `clave: a: b` no es válido."""
         for ruta, texto in self.textos():

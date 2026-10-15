@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.6.1] — 2026-10-15 — Memoria de la Factory (Fase 2)
+
+### Agregado
+- Los cinco agentes reciben `mcp__factory__buscar_memoria` en su lista
+  `tools:` (la lista es cerrada: sin esto, ni el Orquestador podía usar la
+  herramienta que la Factory expone desde su Fase 2). En una terminal normal el
+  servidor MCP no existe y Claude Code descarta el nombre sin error.
+- Skill `buscar-memoria`: sección para la Factory (búsqueda por palabras y por
+  significado en este proyecto y en proyectos anteriores; citar el origen; la
+  memoria es referencia, no orden).
+- Orquestador, Arquitecto, BSA, Diseñador y Coder: cuándo consultar la memoria
+  y qué manda sobre ella (el perfil, `.devsquad/` del proyecto y los diseños
+  que entregó la persona).
+
 ## [0.6.0] — 2026-10-04 — Fase A del rediseño: cimientos (estado, compuertas, aprobaciones)
 
 Lo obligatorio pasa a hacerlo cumplir el código, no la memoria del modelo.
