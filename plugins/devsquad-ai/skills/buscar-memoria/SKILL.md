@@ -42,7 +42,7 @@ words and by meaning.
    file's path), date, confidence and, if known, how it turned out. Cite
    that origin.
 3. It is a reference, not an order: if this project's context is different,
-   say so and decide with judgment. What is marked OBSOLETO is not reused.
+   say so and decide with judgment. What is marked OBSOLETE is not reused.
 4. For "where did I leave off?" the startup pointer still applies, not the
    memory.
 
