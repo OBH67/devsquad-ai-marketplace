@@ -14,7 +14,7 @@ Solo biblioteca estándar.
 import sys
 
 if sys.version_info < (3, 8):
-    sys.stderr.write("devsquad_hook: se requiere Python 3.8 o superior.\n")
+    sys.stderr.write("devsquad_hook: Python 3.8 or later is required.\n")
     sys.exit(1)
 
 import contextlib
@@ -50,12 +50,12 @@ TIMEOUT_VERIFICACION = 300  # segundos por comando de verificación
 PERFIL = os.path.join(E.DIR_ESTADO, "perfil.md")
 
 PATRONES_SECRETOS = (
-    (re.compile(r"-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----"), "una llave privada"),
-    (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "una llave de acceso de AWS"),
-    (re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}"), "una llave de la API de Anthropic"),
-    (re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b"), "un token de GitHub"),
-    (re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"), "un token de Slack"),
-    (re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"), "una llave de la API de Google"),
+    (re.compile(r"-----BEGIN (?:[A-Z]+ )?PRIVATE KEY-----"), "a private key"),
+    (re.compile(r"\bAKIA[0-9A-Z]{16}\b"), "an AWS access key"),
+    (re.compile(r"\bsk-ant-[A-Za-z0-9_-]{20,}"), "an Anthropic API key"),
+    (re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b"), "a GitHub token"),
+    (re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{10,}"), "a Slack token"),
+    (re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b"), "a Google API key"),
 )
 ENV_PERMITIDOS = (".env.example", ".env.sample", ".env.template", ".env.dist")
 
@@ -122,7 +122,7 @@ def perfil_texto(raiz):
 
 def perfil_valido(raiz):
     texto = perfil_texto(raiz)
-    return bool(texto and re.search(r"^# Perfil DevSquad AI\b", texto, re.MULTILINE))
+    return bool(texto and re.search(r"^# (?:DevSquad AI Profile|Perfil DevSquad AI)\b", texto, re.MULTILINE))
 
 
 def comandos_verificacion(texto):
@@ -130,10 +130,10 @@ def comandos_verificacion(texto):
 
 
 def rutas_protegidas(texto):
-    """Patrones de la línea «Archivos protegidos» del perfil (y sus continuaciones)."""
+    """Patterns of the profile's "Protected files" line (and its continuations)."""
     lineas = (texto or "").split("\n")
     for i, linea in enumerate(lineas):
-        m = re.match(r"^\s*[-*]\s+\*\*Archivos protegidos\*\*\s*:(.*)$", linea)
+        m = re.match(r"^\s*[-*]\s+\*\*(?:Protected files|Archivos protegidos)\*\*\s*:(.*)$", linea)
         if not m:
             continue
         bloque = [m.group(1)]
@@ -193,19 +193,19 @@ def compuerta_perfil(raiz, tool, rel):
         return
     if tool in ("Write", "Edit") and rel == PERFIL.replace(os.sep, "/"):
         return
-    raise Bloqueo("Falta el perfil del proyecto (%s). Sin perfil no se puede delegar, escribir ni ejecutar "
-                  "comandos. Siguiente paso: usa la skill `iniciar-proyecto` para crearlo." % PERFIL)
+    raise Bloqueo("The project profile is missing (%s). Without a profile you cannot delegate, write or run "
+                  "commands. Next step: use the `iniciar-proyecto` skill to create it." % PERFIL)
 
 
 def compuerta_secretos(rel, ti):
     if es_env_secreto(rel):
-        raise Bloqueo("No se escriben archivos de secretos (%s). Siguiente paso: guarda las llaves fuera del "
-                      "repositorio y deja un `.env.example` solo con los nombres de las variables." % rel)
+        raise Bloqueo("Secret files are not written (%s). Next step: keep the keys outside the "
+                      "repository and leave a `.env.example` with only the variable names." % rel)
     texto = contenido_de_escritura(ti)
     for patron, que in PATRONES_SECRETOS:
         if patron.search(texto):
-            raise Bloqueo("El contenido a escribir en %s parece incluir %s. Siguiente paso: quita el valor, "
-                          "usa una variable de entorno y pídele la llave a la persona por un canal seguro." % (rel, que))
+            raise Bloqueo("The content to write to %s seems to include %s. Next step: remove the value, "
+                          "use an environment variable and ask the person for the key through a secure channel." % (rel, que))
 
 
 ARCHIVOS_DE_ESTADO = re.compile(r"^\.devsquad/(estado\.json|tracks/[^/]+/track\.json)$")
@@ -219,43 +219,43 @@ def compuerta_estado_gestionado(rel):
     escribirlos, podría fabricarlas o rebajarlas.
     """
     if ARCHIVOS_DE_ESTADO.match(rel):
-        raise Bloqueo("%s lo gestionan `devsquad-estado` y los hooks (ahí viven las aprobaciones humanas y la política de "
-                      "cierre); no se edita a mano. Siguiente paso: usa `devsquad-estado` para lo que sí te corresponde "
-                      "(por ejemplo `tarea`) o pídele a la persona la decisión." % rel)
+        raise Bloqueo("%s is managed by `devsquad-estado` and the hooks (the human approvals and the closing policy "
+                      "live there); it is not edited by hand. Next step: use `devsquad-estado` for what is yours to do "
+                      "(for example `tarea`) or ask the person for the decision." % rel)
 
 
 def compuerta_ordenes_humanas(comando):
     """`aprobar` y `cancelar` son decisiones de la persona: los agentes no las ejecutan."""
     m = ORDEN_HUMANA.search(comando or "")
     if m:
-        raise Bloqueo("`devsquad-estado %s` es una decisión de la persona: la registra el hook cuando ella la da "
-                      "(`/%s:%s ...` en la terminal) o la Factory (ask_human). Tú no la ejecutas. Siguiente paso: "
-                      "pídesela a la persona y espera." % (m.group(1), nombre_plugin(), m.group(1)))
+        raise Bloqueo("`devsquad-estado %s` is the person's decision: the hook records it when they give it "
+                      "(`/%s:%s ...` in the terminal) or the Factory does (ask_human). You do not run it. Next step: "
+                      "ask the person for it and wait." % (m.group(1), nombre_plugin(), m.group(1)))
 
 
 def compuerta_protegidos(raiz, rel):
     patron = es_protegido(rel, rutas_protegidas(perfil_texto(raiz)))
     if patron:
-        raise Bloqueo("%s está protegido por el perfil (patrón `%s`). Siguiente paso: detente y pregúntale a la "
-                      "persona si autoriza el cambio; no lo modifiques ni lo regeneres." % (rel, patron))
+        raise Bloqueo("%s is protected by the profile (pattern `%s`). Next step: stop and ask the "
+                      "person whether they authorize the change; do not modify or regenerate it." % (rel, patron))
 
 
 def compuerta_orden_de_fases(raiz, destino):
     faltan = [f for f in REQUISITOS.get(destino, ()) if not os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f))]
     if faltan:
-        pasos = ", ".join("`%s` (lo produce %s)" % (f, ENTREGABLES[f]) for f in faltan)
-        raise Bloqueo("No se puede delegar en %s todavía: faltan %s. Siguiente paso: completa esa fase primero." % (destino, pasos))
+        pasos = ", ".join("`%s` (produced by %s)" % (f, ENTREGABLES[f]) for f in faltan)
+        raise Bloqueo("You cannot delegate to %s yet: %s missing. Next step: complete that phase first." % (destino, pasos))
 
 
 def compuerta_track_para_coder(raiz):
     tid, track = track_activo(raiz)
     if not tid or not track:
-        raise Bloqueo("No hay un track activo, así que el coder no tiene trabajo definido. Siguiente paso: "
-                      "completa la planeación (el track nace al terminar el BSA y pasa a `listo` cuando plan.md tiene tareas).")
+        raise Bloqueo("There is no active track, so the coder has no defined work. Next step: "
+                      "complete the planning (the track is born when the BSA finishes and moves to `listo` when plan.md has tasks).")
     if track["estado"] in ("listo",) + ESTADOS_DE_TRABAJO:
         faltas = E.faltan_aprobaciones_para_listo(raiz, track)
         if faltas:
-            raise Bloqueo("El coder no trabaja con la arquitectura o el diseño sin aprobación vigente. Falta: %s."
+            raise Bloqueo("The coder does not work with the architecture or the design without a valid approval. Missing: %s."
                           % "; ".join(faltas))
     if track["estado"] == "listo":
         codigo, _, err = estado_cli(raiz, "transicion", "en_progreso")
@@ -263,27 +263,27 @@ def compuerta_track_para_coder(raiz):
             raise Bloqueo(err)
         return
     if track["estado"] not in ESTADOS_DE_TRABAJO:
-        raise Bloqueo("El track %s está en %s y el coder solo trabaja en %s. Siguiente paso: haz avanzar el track "
-                      "(%s)." % (tid, track["estado"], " o ".join(ESTADOS_DE_TRABAJO), pista_de_estado(track["estado"])))
+        raise Bloqueo("Track %s is in %s and the coder only works in %s. Next step: advance the track "
+                      "(%s)." % (tid, track["estado"], " or ".join(ESTADOS_DE_TRABAJO), pista_de_estado(track["estado"])))
 
 
 def pista_de_estado(estado):
     return {
-        "borrador": "completa requerimientos, arquitectura y diseño, y escribe las tareas en plan.md",
-        "en_revision": "espera la revisión o ciérralo si ya terminó",
-        "verificado": "ciérralo con `devsquad-estado cerrar`",
-        "bloqueado": "resuelve el bloqueo y ejecuta `devsquad-estado desbloquear`",
-        "cerrado": "crea un track nuevo con el BSA",
-    }.get(estado, "revisa `devsquad-estado estado`")
+        "borrador": "complete requirements, architecture and design, and write the tasks in plan.md",
+        "en_revision": "wait for the review or close it if it is finished",
+        "verificado": "close it with `devsquad-estado cerrar`",
+        "bloqueado": "resolve the block and run `devsquad-estado desbloquear`",
+        "cerrado": "create a new track with the BSA",
+    }.get(estado, "review `devsquad-estado estado`")
 
 
 def compuerta_track_para_escribir(raiz, rel):
     tid, track = track_activo(raiz)
     if not tid or not track or track["estado"] not in ESTADOS_DE_TRABAJO:
-        estado = track["estado"] if track else "sin track activo"
-        raise Bloqueo("No se escribe código del proyecto (%s) fuera de un track en %s (estado actual: %s). "
-                      "Siguiente paso: %s." % (rel, " o ".join(ESTADOS_DE_TRABAJO), estado,
-                                               pista_de_estado(track["estado"]) if track else "crea y planea un track"))
+        estado = track["estado"] if track else "no active track"
+        raise Bloqueo("Project code (%s) is not written outside a track in %s (current state: %s). "
+                      "Next step: %s." % (rel, " or ".join(ESTADOS_DE_TRABAJO), estado,
+                                          pista_de_estado(track["estado"]) if track else "create and plan a track"))
 
 
 def pretooluse(data, raiz, rol):
@@ -356,7 +356,7 @@ def huella(raiz, rel):
         with open(os.path.join(raiz, rel), "rb") as f:
             return hashlib.sha1(f.read()).hexdigest()
     except OSError:
-        return "borrado"
+        return "deleted"
 
 
 def instantanea(raiz):
@@ -401,31 +401,31 @@ def revisar_cambios(raiz):
     estado = E.cargar_estado(raiz)
     violaciones = []
     if estado.get("linea_base_aprobaciones") and estado["linea_base_aprobaciones"] != huella_aprobaciones(raiz):
-        violaciones.append("Las aprobaciones humanas, la política de cierre, los comandos aprobados o una cancelación "
-                           "cambiaron mientras trabajabas: solo la persona puede fijarlas. Restaura `.devsquad/estado.json` y los "
-                           "`track.json` con `git checkout -- .devsquad/` y no los toques.")
+        violaciones.append("The human approvals, the closing policy, the approved commands or a cancellation "
+                           "changed while you were working: only the person can set them. Restore `.devsquad/estado.json` and the "
+                           "`track.json` files with `git checkout -- .devsquad/` and do not touch them.")
     actual = instantanea(raiz)
     if actual is None:
-        return violaciones, ["Aviso: no es un repositorio Git (o falta git); no se pudo revisar el resultado del coder "
-                             "contra secretos y archivos protegidos."]
+        return violaciones, ["Warning: this is not a Git repository (or git is missing); the coder's result could not be checked "
+                             "against secrets and protected files."]
     base = estado.get("linea_base_git") or {}
     protegidos = rutas_protegidas(perfil_texto(raiz))
     for rel, h in actual.items():
         if base.get(rel) == h:
             continue
-        existe = h != "borrado"
+        existe = h != "deleted"
         patron = es_protegido(rel, protegidos)
         if patron:
-            violaciones.append("%s: archivo protegido por el perfil (`%s`) modificado. Revierte el cambio "
-                               "(`git checkout -- %s`) y pregunta a la persona." % (rel, patron, rel))
+            violaciones.append("%s: file protected by the profile (`%s`) was modified. Revert the change "
+                               "(`git checkout -- %s`) and ask the person." % (rel, patron, rel))
         if existe and es_env_secreto(rel):
-            violaciones.append("%s: archivo de secretos. Elimínalo y deja solo un `.env.example` con los nombres "
-                               "de las variables." % rel)
+            violaciones.append("%s: secrets file. Delete it and leave only a `.env.example` with the variable "
+                               "names." % rel)
         elif existe:
             texto = leer_texto(os.path.join(raiz, rel)) or ""
             for patron_s, que in PATRONES_SECRETOS:
                 if patron_s.search(texto):
-                    violaciones.append("%s: parece incluir %s. Quita el valor y usa una variable de entorno." % (rel, que))
+                    violaciones.append("%s: seems to include %s. Remove the value and use an environment variable." % (rel, que))
                     break
     return violaciones, []
 
@@ -438,7 +438,7 @@ def titulo_desde_requerimientos(raiz):
     m = re.search(r"^#\s+(.+)$", texto, re.MULTILINE)
     if not m:
         return ""
-    titulo = re.sub(r"^(requerimientos|requisitos)\b\s*[:\-—–]*\s*(de(l)?\s+)?", "", m.group(1).strip(), flags=re.IGNORECASE)
+    titulo = re.sub(r"^(requirements|requerimientos|requisitos)\b\s*[:\-—–]*\s*(de(l)?\s+|for\s+|of\s+)?", "", m.group(1).strip(), flags=re.IGNORECASE)
     return (titulo or m.group(1)).strip()
 
 
@@ -451,7 +451,7 @@ def slug_desde_titulo(titulo, maximo=40):
         if len(candidato) > maximo:
             break
         slug = candidato
-    return slug or "iteracion"
+    return slug or "iteration"
 
 
 def avanzar_planeacion(raiz, rol):
@@ -464,12 +464,12 @@ def avanzar_planeacion(raiz, rol):
         titulo = titulo_desde_requerimientos(raiz)
         args = ["crear", slug_desde_titulo(titulo)] + (["--titulo", titulo[:120]] if titulo else [])
         codigo, out, err = estado_cli(raiz, *args)
-        mensajes.append(out if codigo == 0 else "No se pudo crear el track: " + err)
+        mensajes.append(out if codigo == 0 else "The track could not be created: " + err)
         tid, track = track_activo(raiz)
     if track and track["estado"] == "borrador" and all(existe(f) for f in ENTREGABLES):
         codigo, out, err = estado_cli(raiz, "transicion", "listo")
         mensajes.append(out if codigo == 0 else
-                        "El track %s no pasa a `listo`: %s" % (tid, err.replace("devsquad-estado: ", "")))
+                        "Track %s does not move to `listo`: %s" % (tid, err.replace("devsquad-estado: ", "")))
     return mensajes
 
 
@@ -483,7 +483,7 @@ def ejecutar_verificacion(raiz, comandos):
             if r.returncode != 0:
                 fallos.append((etiqueta, comando, (r.stdout + r.stderr).strip()[-1500:]))
         except subprocess.TimeoutExpired:
-            fallos.append((etiqueta, comando, "Se agotó el tiempo (%d s)." % TIMEOUT_VERIFICACION))
+            fallos.append((etiqueta, comando, "Timed out (%d s)." % TIMEOUT_VERIFICACION))
     return fallos
 
 
@@ -499,13 +499,13 @@ def verificar_coder(raiz):
     comandos = comandos_verificacion(perfil_texto(raiz))
     puede_avanzar, fallos = True, []
     if not comandos:
-        avisos.append("Aviso: el perfil no declara comandos de verificación; no se pudo comprobar el trabajo del "
-                      "coder. Agrega la sección «Comandos de verificación» a %s." % PERFIL)
+        avisos.append("Warning: the profile declares no verification commands; the coder's work could not be checked. "
+                      "Add a \"Verification commands\" section to %s." % PERFIL)
     else:
         aprobacion, detalle = E.estado_aprobacion(raiz, {}, "comandos")
         if aprobacion != "ok":
             puede_avanzar = False
-            avisos.append("No se ejecutaron los comandos de verificación (%s) y el track no avanza: %s. Siguiente paso: %s."
+            avisos.append("The verification commands (%s) were not run and the track does not advance: %s. Next step: %s."
                           % (", ".join(c for _, c in comandos), detalle, E.comoaprobar("comandos")))
         else:
             fallos = ejecutar_verificacion(raiz, comandos)
@@ -520,12 +520,12 @@ def verificar_coder(raiz):
     if previos >= MAX_BLOQUEOS:
         contadores["stop_bloqueos"] = 0
         E.escribir_json(E.ruta_estado(raiz), estado)
-        return ["La verificación sigue fallando tras %d intentos; se deja terminar al coder y se escala a la persona. "
-                "Siguiente paso: pregúntale cómo proceder (ask_human). Problemas:\n%s" % (MAX_BLOQUEOS, detalle)], False
+        return ["Verification is still failing after %d attempts; the coder is allowed to finish and it is escalated to the person. "
+                "Next step: ask them how to proceed (ask_human). Problems:\n%s" % (MAX_BLOQUEOS, detalle)], False
     contadores["stop_bloqueos"] = previos + 1
     E.escribir_json(E.ruta_estado(raiz), estado)
-    raise Bloqueo("La verificación falló (intento %d de %d); no puedes terminar con el código en rojo. "
-                  "Siguiente paso: corrige lo siguiente y vuelve a terminar.\n%s" % (previos + 1, MAX_BLOQUEOS, detalle))
+    raise Bloqueo("Verification failed (attempt %d of %d); you cannot finish with the code red. "
+                  "Next step: fix the following and finish again.\n%s" % (previos + 1, MAX_BLOQUEOS, detalle))
 
 
 def avanzar_coder(raiz):
@@ -535,9 +535,9 @@ def avanzar_coder(raiz):
     try:
         abiertas = E.tareas_abiertas(raiz, tid)
     except E.ReglaError as e:
-        return ["Aviso: %s" % e]
+        return ["Warning: %s" % e]
     if abiertas:
-        return ["Track %s: faltan tareas por completar (%s)." % (tid, ", ".join(abiertas))]
+        return ["Track %s: tasks still to complete (%s)." % (tid, ", ".join(abiertas))]
     codigo, out, err = estado_cli(raiz, "transicion", "en_revision")
     return [out if codigo == 0 else err]
 
@@ -596,11 +596,11 @@ def aviso_de_cierre(raiz):
     if not E.cumple_criterios_objetivos(raiz, track):
         return None
     if E.motivo_no_cerrable(raiz, track) is None:
-        return "El track %s ya cumple los criterios de cierre." % tid
+        return "Track %s already meets the closing criteria." % tid
     if E.politica_de(track) == "humano":
         estado, detalle = E.estado_aprobacion(raiz, track, "cierre")
-        return ("El track %s cumple los criterios objetivos y espera la aprobación de cierre de la persona "
-                "(política `humano`; aprobación %s: %s). %s." % (tid, estado, detalle, E.comoaprobar("cierre")))
+        return ("Track %s meets the objective criteria and is waiting for the person's closing approval "
+                "(policy `humano`; approval %s: %s). %s." % (tid, E.txt_aprobacion(estado), detalle, E.comoaprobar("cierre")))
     return None
 
 
@@ -629,7 +629,7 @@ def quien_aprueba(raiz):
             return r.stdout.strip()
     except OSError:
         pass
-    return "persona"
+    return "person"
 
 
 def userpromptsubmit(data, raiz):
@@ -643,16 +643,16 @@ def userpromptsubmit(data, raiz):
         return None
     orden, resto = m.group("orden"), m.group("resto").strip()
     if not os.path.exists(E.ruta_estado(raiz)):
-        return ["No hay %s/%s en este proyecto; no se registró nada." % (E.DIR_ESTADO, E.ARCHIVO_ESTADO)], None
+        return ["There is no %s/%s in this project; nothing was recorded." % (E.DIR_ESTADO, E.ARCHIVO_ESTADO)], None
     por = quien_aprueba(raiz)
     if orden == "cancelar":
         codigo, out, err = estado_cli(raiz, "cancelar", "--motivo", resto, "--fuente", "terminal", "--por", por)
-        return [out if codigo == 0 else "No se canceló: " + err.replace("devsquad-estado: ", "")], None
+        return [out if codigo == 0 else "Not cancelled: " + err.replace("devsquad-estado: ", "")], None
     objeto = resto.split()[0].lower().replace("diseño", "diseno") if resto.split() else ""
     if objeto not in E.APROBABLES:
-        return ["Uso: /%s:aprobar %s" % (nombre_plugin(), "|".join(E.APROBABLES))], None
+        return ["Usage: /%s:aprobar %s" % (nombre_plugin(), "|".join(E.APROBABLES))], None
     codigo, out, err = estado_cli(raiz, "aprobar", objeto, "--fuente", "terminal", "--por", por)
-    mensajes = [out if codigo == 0 else "No se registró la aprobación: " + err.replace("devsquad-estado: ", "")]
+    mensajes = [out if codigo == 0 else "The approval was not recorded: " + err.replace("devsquad-estado: ", "")]
     if codigo == 0:
         mensajes += avanzar_tras_aprobacion(raiz, objeto)
     return mensajes, None
@@ -666,7 +666,7 @@ def avanzar_tras_aprobacion(raiz, objeto):
     if objeto in E.APROBACIONES_PARA_LISTO and track["estado"] == "borrador":
         if all(os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f)) for f in ENTREGABLES):
             codigo, out, err = estado_cli(raiz, "transicion", "listo")
-            return [out] if codigo == 0 else ["El track sigue en borrador: " + err.replace("devsquad-estado: ", "")]
+            return [out] if codigo == 0 else ["The track is still in borrador: " + err.replace("devsquad-estado: ", "")]
         return []
     if objeto == "comandos" and track["estado"] in ESTADOS_DE_TRABAJO:
         # El coder ya había terminado sin poder verificar: con los comandos aprobados se verifica ahora.
@@ -677,13 +677,13 @@ def avanzar_tras_aprobacion(raiz, objeto):
             return []
         fallos = ejecutar_verificacion(raiz, comandos_verificacion(perfil_texto(raiz)))
         if fallos:
-            return ["La verificación falló con los comandos aprobados; el track sigue en %s: %s"
+            return ["Verification failed with the approved commands; the track stays in %s: %s"
                     % (track["estado"], "; ".join("%s: %s" % (f[0], f[2][-300:]) for f in fallos))]
         codigo, out, err = estado_cli(raiz, "transicion", "en_revision")
         return [out] if codigo == 0 else [err]
     if objeto == "cierre":
         codigo, out, err = estado_cli(raiz, "cerrar")
-        return [out] if codigo == 0 else ["No se cerró: " + err.replace("devsquad-estado: ", "")]
+        return [out] if codigo == 0 else ["Not closed: " + err.replace("devsquad-estado: ", "")]
     return []
 
 
@@ -692,7 +692,7 @@ def avanzar_tras_aprobacion(raiz, objeto):
 def main(argv=None):
     argv = sys.argv[1:] if argv is None else argv
     if len(argv) != 1 or argv[0] not in ("sessionstart", "userpromptsubmit", "pretooluse", "subagentstop", "stop"):
-        sys.stderr.write("Uso: devsquad_hook.py sessionstart|userpromptsubmit|pretooluse|subagentstop|stop\n")
+        sys.stderr.write("Usage: devsquad_hook.py sessionstart|userpromptsubmit|pretooluse|subagentstop|stop\n")
         return 1
     try:
         data = json.load(sys.stdin)
@@ -703,7 +703,7 @@ def main(argv=None):
                 texto = "DevSquad AI: " + " | ".join(resultado[0])
                 print(json.dumps({"systemMessage": texto, "hookSpecificOutput": {
                     "hookEventName": "UserPromptSubmit",
-                    "additionalContext": "RESULTADO DEL HOOK (ya procesado por código, no por ti): " + " | ".join(resultado[0])}},
+                    "additionalContext": "HOOK RESULT (already processed by code, not by you): " + " | ".join(resultado[0])}},
                                  ensure_ascii=False))
             return 0
         rol = rol_de(data.get("agent_type"))
@@ -724,10 +724,10 @@ def main(argv=None):
             print(json.dumps({"systemMessage": "DevSquad AI: " + " | ".join(mensajes)}, ensure_ascii=False))
         return 0
     except Bloqueo as b:
-        sys.stderr.write("DevSquad AI bloqueó la acción. %s\n" % b)
+        sys.stderr.write("DevSquad AI blocked the action. %s\n" % b)
         return 2
     except Exception:  # fallo del propio hook: no bloquea
-        sys.stderr.write("devsquad_hook falló (no bloqueante):\n" + traceback.format_exc())
+        sys.stderr.write("devsquad_hook failed (non-blocking):\n" + traceback.format_exc())
         return 1
 
 

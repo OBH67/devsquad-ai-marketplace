@@ -1,221 +1,233 @@
 # DevSquad AI
 
-Equipo de agentes SDLC para Claude Code.
+A team of SDLC agents for Claude Code.
 
-Incluye 5 agentes:
+It includes 5 agents:
 
-- **Orquestador** (Sonnet · esfuerzo medio) — director de proyecto, punto de entrada único.
-- **BSA** (Sonnet · esfuerzo xhigh) — traduce tu idea en requerimientos claros.
-- **Arquitecto** (Opus · esfuerzo alto) — define la arquitectura, siempre explicando costo e
-  impacto de cada decisión. Sobre el stack sigue una jerarquía: si tú ya
-  declaraste uno al configurar tu perfil, ese stack manda y el Arquitecto
-  diseña sobre él sin cuestionarlo; si no declaraste ninguno, él lo propone
-  y lo justifica según tus requerimientos.
-- **Diseñador** (Sonnet · esfuerzo alto) — define paleta, tipografía, layout, accesibilidad y
-  responsividad antes de que se escriba código, para que nadie improvise
-  el diseño visual mientras programa.
-- **Coder** (Sonnet · esfuerzo alto) — implementa el código siguiendo lo ya definido, y se
-  detiene a preguntar antes de tocar cualquier archivo que hayas marcado
-  como protegido.
+- **Orchestrator** (Sonnet · medium effort) — project director, the single entry point.
+- **BSA** (Sonnet · xhigh effort) — turns your idea into clear requirements.
+- **Architect** (Opus · high effort) — defines the architecture, always explaining the cost and
+  impact of each decision. On the stack it follows a hierarchy: if you already
+  declared one when setting up your profile, that stack rules and the Architect
+  designs on top of it without questioning it; if you did not declare one, the
+  Architect proposes it and justifies it against your requirements.
+- **Designer** (Sonnet · high effort) — defines palette, typography, layout, accessibility and
+  responsiveness before any code is written, so that nobody improvises
+  the visual design while programming.
+- **Coder** (Sonnet · high effort) — implements the code following what is already defined, and
+  stops to ask before touching any file you marked as protected.
 
-## Instalación
+The agents work in English: every file they write (`.devsquad/`, documents,
+decisions, commit messages) is in English. They can chat with you in another
+language, but the project's records stay in English.
 
-Necesitas la app de escritorio o CLI de Claude Code instalada.
+> The names of the agents (`orquestador`, `bsa`, `arquitecto`, `disenador`,
+> `coder`), the commands (`/devsquad-ai:aprobar`, `/devsquad-ai:cancelar`,
+> `devsquad-estado`), the track states (`borrador`, `listo`, `en_progreso`…) and
+> the file names under `.devsquad/` are identifiers: they stay as they are so
+> that existing projects and the Factory keep working.
 
-### Desde GitHub
+## Installation
+
+You need the Claude Code desktop app or CLI installed.
+
+### From GitHub
 
 ```
-/plugin marketplace add <tu-usuario>/devsquad-ai-marketplace
+/plugin marketplace add <your-user>/devsquad-ai-marketplace
 /plugin install devsquad-ai@devsquad-ai-marketplace
 /reload-plugins
 ```
 
-### Desde una copia local
+### From a local copy
 
 ```
-/plugin marketplace add /ruta/completa/a/devsquad-ai-marketplace
+/plugin marketplace add /full/path/to/devsquad-ai-marketplace
 /plugin install devsquad-ai@devsquad-ai-marketplace
 /reload-plugins
 ```
 
-Reinicia Claude Code una vez. Al volver a abrir el proyecto, el Orquestador
-se activa automáticamente como agente principal.
+Restart Claude Code once. When you reopen the project, the Orchestrator
+activates automatically as the main agent.
 
-## Primer uso
+## First use
 
-La primera vez que hables con Claude Code en un proyecto nuevo, el
-Orquestador va a pedirte unos datos básicos (cómo te gusta que te llamen, tu
-nivel técnico, tu idioma preferido). Esto es para que todos los agentes se
-adapten a cómo te gusta trabajar — no necesitas saber nada técnico para
-responder estas preguntas.
+The first time you talk to Claude Code in a new project, the Orchestrator
+will ask you for a few basics (how you like to be addressed, your technical
+level, your preferred language). This is so that all the agents adapt to how
+you like to work — you don't need to know anything technical to answer these
+questions.
 
-También te va a preguntar dos cosas sobre el proyecto, sin importar tu nivel
-técnico:
+It will also ask you two things about the project, regardless of your technical
+level:
 
-- **Si el stack ya está decidido** o prefieres que el Arquitecto lo
-  proponga. Si ya lo tienes, descríbelo con tus palabras (lenguaje,
-  frameworks, dónde corre, y restricciones duras como "todo local" o "sin
-  APIs de pago") y el equipo se ajusta a eso.
-- **Si hay código o archivos ya terminados** que no deben regenerarse (por
-  ejemplo, un runtime que ya depuraste o un archivo de configuración que ya
-  funciona). Quedan marcados como protegidos y ningún agente los toca sin
-  preguntarte primero.
+- **Whether the stack is already decided** or you prefer the Architect to
+  propose it. If you already have it, describe it in your own words (language,
+  frameworks, where it runs, and hard constraints such as "all local" or "no
+  paid APIs") and the team adjusts to that.
+- **Whether there is code or files that are already finished** and must not be
+  regenerated (for example, a runtime you already debugged or a configuration
+  file that already works). They are marked as protected and no agent touches
+  them without asking you first.
 
-Después de eso, simplemente cuéntale tu idea de proyecto como se la
-contarías a una persona. El Orquestador se encarga de coordinar al resto del
-equipo.
+After that, just tell it your project idea the way you would tell a person.
+The Orchestrator takes care of coordinating the rest of the team.
 
-## Cómo iniciar un proyecto nuevo, separado del anterior (importante)
+## How to start a new project, separate from the previous one (important)
 
-Una sesión de Claude Code queda anclada a la carpeta donde la abriste — no
-cambia de proyecto solo porque le digas "empecemos algo nuevo" en el chat,
-porque no puede moverse de carpeta por su cuenta.
+A Claude Code session stays anchored to the folder where you opened it — it
+does not switch projects just because you tell it "let's start something new"
+in the chat, because it cannot move folders on its own.
 
-Si quieres un proyecto totalmente aparte del que ya tienes en curso:
+If you want a completely separate project from the one you already have in
+progress:
 
-1. Crea (o ubica) la carpeta nueva en tu explorador de archivos.
-2. Abre una terminal **dentro de esa carpeta nueva** (no reuses la ventana
-   donde ya estabas trabajando en el otro proyecto).
-3. Corre `claude` ahí para iniciar una sesión nueva.
+1. Create (or locate) the new folder in your file explorer.
+2. Open a terminal **inside that new folder** (do not reuse the window where
+   you were working on the other project).
+3. Run `claude` there to start a new session.
 
-Si en vez de eso sigues escribiéndole en la misma conversación de antes, el
-Orquestador va a seguir viendo el estado de tu proyecto anterior — y, si
-detecta que lo que le describes no coincide con ese proyecto, te va a
-avisar explícitamente en qué carpeta está parado para que puedas corregirlo,
-en vez de mezclar los dos proyectos.
+If instead you keep writing in the same conversation as before, the
+Orchestrator will keep seeing your previous project's state — and, if it
+detects that what you describe does not match that project, it will tell you
+explicitly which folder it is standing in so you can correct it, instead of
+mixing the two projects.
 
-## Qué esperar en esta versión
+## What to expect in this version
 
-Esta versión cubre: descubrimiento de requerimientos (BSA), diseño de
-arquitectura con transparencia de costos (Arquitecto), sistema de diseño
-(Diseñador), e implementación con estándares técnicos de backend y
-frontend (Coder). Todavía **no** incluye (ver `CHANGELOG.md`):
+This version covers: requirements discovery (BSA), architecture design with
+cost transparency (Architect), the design system (Designer), and
+implementation with backend and frontend technical standards (Coder). It does
+**not** yet include (see `CHANGELOG.md`):
 
-- Reviewer, Cybersecurity, QA y Deployment como agentes separados.
-- Sistema de hand-off de sesión más robusto.
-- Guía paso a paso de extracción segura de API keys/tokens.
+- Reviewer, Cybersecurity, QA and Deployment as separate agents.
+- A more robust session hand-off system.
+- A step-by-step guide to safely extracting API keys/tokens.
 
-Repórtale a Omar cualquier punto donde el Orquestador no supo qué hacer o
-donde una explicación no quedó clara — eso es exactamente lo que esta fase
-de prueba busca descubrir.
+Report to Omar any point where the Orchestrator did not know what to do or
+where an explanation was not clear — that is exactly what this testing phase
+is meant to find out.
 
-## Estructura de archivos que genera el proyecto
+## File structure the project generates
 
-DevSquad AI crea una carpeta `.devsquad/` dentro de tu proyecto. **Se
-versiona en Git**: es la memoria del proyecto (no la agregues a `.gitignore`).
-Contiene:
+DevSquad AI creates a `.devsquad/` folder inside your project. **It is
+versioned in Git**: it is the project's memory (do not add it to
+`.gitignore`). It contains:
 
-- `perfil.md` — tu perfil (nivel técnico, idioma, preferencias, stack
-  declarado y archivos protegidos).
-- `requerimientos.md` — lo que definió el BSA.
-- `arquitectura.md` — lo que definió el Arquitecto.
-- `diseno.md` — lo que definió el Diseñador.
-- `estado.md` — formato anterior; la 0.6.0 lo reemplaza por `estado.json` y
-  `tracks/` (ver abajo) y ya no se escribe.
-- `estado.json` — estado legible por máquina, con `schema_version`.
-- `tracks/NNN-nombre/` — una unidad de trabajo: `track.json` (estado),
-  `spec.md` (qué y criterios de aceptación) y `plan.md` (tareas `[ ]` `[~]`
-  `[x]`, cada una hecha con el commit que la implementa). Solo hay un track
-  abierto a la vez: no se abre otro hasta cerrar el actual.
+- `perfil.md` — your profile (technical level, language, preferences, declared
+  stack and protected files).
+- `requerimientos.md` — what the BSA defined.
+- `arquitectura.md` — what the Architect defined.
+- `diseno.md` — what the Designer defined.
+- `estado.md` — the previous format; 0.6.0 replaced it with `estado.json` and
+  `tracks/` (see below) and it is no longer written.
+- `estado.json` — machine-readable state, with `schema_version`.
+- `tracks/NNN-name/` — a unit of work: `track.json` (state), `spec.md` (what and
+  the acceptance criteria) and `plan.md` (tasks `[ ]` `[~]` `[x]`, each one done
+  with the commit that implements it). Only one track is open at a time: no
+  other is opened until the current one is closed.
 
-### Compuertas (hooks del plugin)
+### Gates (the plugin's hooks)
 
-Lo obligatorio lo hace cumplir el código, no la memoria del modelo
-(`hooks/hooks.json` + `scripts/devsquad_hook.py`). Solo actúan sobre los
-agentes de este plugin; bloquean con un mensaje que dice el paso que falta:
+What is mandatory is enforced by code, not by the model's memory
+(`hooks/hooks.json` + `scripts/devsquad_hook.py`). They only act on this
+plugin's agents; they block with a message that says the missing step:
 
-- **Perfil primero**: sin `.devsquad/perfil.md` no se delega, escribe ni ejecuta.
-- **Aprobación humana** (ver más abajo): el track no pasa a `listo` sin la
-  aprobación de la persona de la arquitectura y del diseño; los comandos de
-  verificación del perfil solo se ejecutan si ella los aprobó; y el cierre se
-  rige por la política de cierre del track.
-- `estado.json` y `track.json` (donde viven las aprobaciones) no los edita el
-  modelo, y `devsquad-estado aprobar|cancelar` no lo ejecutan los agentes.
-- **Orden de fases**: BSA → Arquitecto → Diseñador → Coder (según los
-  entregables en `.devsquad/`). Delegar en el coder pasa el track de `listo`
-  a `en_progreso`.
-- **Track**: el código del proyecto solo se escribe con un track en
-  `en_progreso` o `correcciones`.
-- **Archivos protegidos** (los del perfil) y **secretos** (`.env*`, llaves).
-- **El coder no termina en rojo**: ejecuta los «Comandos de verificación» del
-  perfil; tras 3 bloqueos seguidos escala a la persona.
-- **Revisión del resultado del coder**: como el coder tiene `Bash`
-  (`echo X > .env`, `sed -i`), al terminar se revisa lo que cambió en Git
-  respecto a lo que ya estaba cambiado al delegarle: un `.env*` real (aunque
-  esté en `.gitignore`), patrones de secretos o archivos protegidos
-  modificados. Bloquea con el mismo tope de 3 bloqueos.
-- Al terminar cada agente de planeación o el coder, el hook avanza el track con
-  `devsquad-estado`. **`Stop` solo informa** (por ejemplo «espera la aprobación
-  de cierre»): nunca cierra ni bloquea.
+- **Profile first**: without `.devsquad/perfil.md` nothing is delegated, written or run.
+- **Human approval** (see below): the track does not move to `listo` without the
+  person's approval of the architecture and the design; the profile's
+  verification commands are only run if they approved them; and the closing is
+  governed by the track's closing policy.
+- `estado.json` and `track.json` (where the approvals live) are not edited by
+  the model, and `devsquad-estado aprobar|cancelar` is not run by the agents.
+- **Phase order**: BSA → Architect → Designer → Coder (according to the
+  deliverables in `.devsquad/`). Delegating to the coder moves the track from
+  `listo` to `en_progreso`.
+- **Track**: project code is only written with a track in `en_progreso` or
+  `correcciones`.
+- **Protected files** (those in the profile) and **secrets** (`.env*`, keys).
+- **The coder does not finish in red**: it runs the profile's "Verification
+  commands"; after 3 blocks in a row it escalates to the person.
+- **Review of the coder's result**: since the coder has `Bash` (`echo X > .env`,
+  `sed -i`), when it finishes what changed in Git is reviewed against what was
+  already changed when it was delegated to: a real `.env*` (even if it is in
+  `.gitignore`), secret patterns or modified protected files. It blocks with
+  the same cap of 3 blocks.
+- When each planning agent or the coder finishes, the hook advances the track
+  with `devsquad-estado`. **`Stop` only informs** (for example "waiting for the
+  closing approval"): it never closes or blocks.
 
-Requieren `python3`; si falta, los hooks fallan sin bloquear (límite conocido).
+They require `python3`; if it is missing, the hooks fail without blocking (a
+known limit).
 
-> **Alcance de las compuertas.** Son **barandales contra errores del modelo,
-> no una frontera de seguridad**. Con `Bash` un agente (o alguien que lo
-> instruya) puede esquivarlas: la revisión del resultado atrapa lo habitual
-> pero no lo deliberado (un archivo fuera del proyecto, un secreto en un
-> formato desconocido, un comando que reescribe el historial de Git, etc.).
-> Para aislar de verdad al agente hace falta aislamiento del sistema operativo
-> (usuario sin privilegios, sin credenciales a su alcance), no hooks.
+> **Scope of the gates.** They are **guardrails against model mistakes, not a
+> security boundary**. With `Bash` an agent (or someone instructing it) can get
+> around them: the result review catches the usual but not the deliberate (a
+> file outside the project, a secret in an unknown format, a command that
+> rewrites Git history, etc.). To truly isolate the agent you need
+> operating-system isolation (an unprivileged user, no credentials within
+> reach), not hooks.
 
-### Aprobaciones humanas, política de cierre y cancelar
+### Human approvals, closing policy and cancel
 
-Lo que decide la persona solo lo registra el **código** (los hooks o la
-Factory), nunca el modelo:
+What the person decides is only recorded by **code** (the hooks or the
+Factory), never by the model:
 
-| Qué | Cómo la da la persona (terminal) | En la Factory |
+| What | How the person gives it (terminal) | In the Factory |
 |---|---|---|
-| Arquitectura | `/devsquad-ai:aprobar arquitectura` | `ask_human` con `kind: "approval"`, `subject: "arquitectura"` |
-| Diseño | `/devsquad-ai:aprobar diseno` | `subject: "diseno"` |
-| Comandos de verificación del perfil | `/devsquad-ai:aprobar comandos` | `subject: "comandos"` |
-| Cierre del track | `/devsquad-ai:aprobar cierre` | `subject: "cierre"` |
-| Cancelar un track | `/devsquad-ai:cancelar <motivo>` | `ask_human` con `kind: "cancel"` |
+| Architecture | `/devsquad-ai:aprobar arquitectura` | `ask_human` with `kind: "approval"`, `subject: "arquitectura"` |
+| Design | `/devsquad-ai:aprobar diseno` | `subject: "diseno"` |
+| The profile's verification commands | `/devsquad-ai:aprobar comandos` | `subject: "comandos"` |
+| Closing the track | `/devsquad-ai:aprobar cierre` | `subject: "cierre"` |
+| Cancel a track | `/devsquad-ai:cancelar <reason>` | `ask_human` with `kind: "cancel"` |
 
-En la terminal un hook `UserPromptSubmit` ve el texto que la persona teclea (el
-modelo no puede producirlo; las skills `aprobar` y `cancelar` no son invocables
-por el modelo). En la Factory, la Factory ejecuta
-`devsquad-estado aprobar <objeto> --fuente factory --por <usuario>` al recibir
-la respuesta (el contrato de `ask_human` se implementa en la Factory).
+In the terminal a `UserPromptSubmit` hook sees the text the person types (the
+model cannot produce it; the `aprobar` and `cancelar` skills cannot be invoked
+by the model). In the Factory, the Factory runs
+`devsquad-estado aprobar <object> --fuente factory --por <user>` when it
+receives the answer (the `ask_human` contract is implemented in the Factory).
 
-- Las aprobaciones de arquitectura y diseño llevan la **huella SHA-256** del
-  documento: si cambia, la aprobación queda **obsoleta**. La de comandos, la
-  huella de la lista de comandos. La de cierre, el **commit exacto** (`HEAD`):
-  commits nuevos la vuelven obsoleta.
-- **Política de cierre** de cada track (`track.json`, `politica_cierre`): la
-  propone el Arquitecto en `arquitectura.md` (`**Política de cierre**: humano`),
-  la aprueba la persona con la arquitectura y queda dentro de la huella
-  aprobada; el modelo no puede cambiarla.
-  - `humano` (por defecto): criterios objetivos (tareas con commit y, si
-    existen `revision.json`/`verificacion.json`, estado `verificado` y
-    aprobados) **más** la aprobación de cierre. Al aprobarla, el código cierra.
-  - `automatico`: el código cierra solo con los criterios objetivos.
-    **Se rechaza mientras no exista el agente revisor** (fase C).
-- `devsquad-estado cancelar --motivo ...` (o `/devsquad-ai:cancelar`): el track
-  pasa a `cancelado`, queda libre el lugar único y se conserva el historial
-  (`cancelacion` con motivo, estado previo, quién y cuándo).
+- The architecture and design approvals carry the document's **SHA-256
+  hash**: if it changes, the approval becomes **stale**. The commands approval
+  carries the hash of the command list. The closing approval carries the
+  **exact commit** (`HEAD`): new commits make it stale.
+- **Closing policy** of each track (`track.json`, `politica_cierre`): proposed by
+  the Architect in `arquitectura.md` (`**Closing policy**: humano`), approved by
+  the person together with the architecture, and it stays inside the approved
+  hash; the model cannot change it. (The older `**Política de cierre**` label is
+  still understood.)
+  - `humano` (default): objective criteria (tasks with a commit and, if
+    `revision.json`/`verificacion.json` exist, state `verificado` and approved)
+    **plus** the closing approval. When it is approved, the code closes.
+  - `automatico`: the code closes by itself with the objective criteria.
+    **It is rejected while the reviewer agent does not exist** (phase C).
+- `devsquad-estado cancelar --motivo ...` (or `/devsquad-ai:cancelar`): the
+  track moves to `cancelado`, the single slot is freed and the history is kept
+  (`cancelacion` with reason, previous state, who and when).
 
-### Arranque atómico y memoria
+### Atomic startup and memory
 
-- Al empezar, reanudar, limpiar (`/clear`) o compactar la conversación, el
-  hook `SessionStart` inyecta un **puntero** de unas pocas líneas generado por
-  script (`scripts/devsquad_puntero.py`, tope duro de 10.000 caracteres): track
-  activo y su estado, siguiente tarea, último commit, bloqueos, memoria
-  disponible y el siguiente paso sugerido. «¿En qué me quedé?» es una consulta
-  exacta sobre el estado, no una búsqueda. (`PreCompact` no puede inyectar
-  contexto; tras compactar lo repone `SessionStart`.)
-- **Memoria, nivel 1**: un archivo por decisión o aprendizaje en
-  `.devsquad/memoria/{decisiones,aprendizajes}/`, y un índice generado
-  (`.devsquad/memoria/indice.md`) que el agente lee con Read; la skill
-  `buscar-memoria` explica cómo. El Orquestador no tiene `Bash`. Los niveles 2
-  (texto completo) y 3 (significado) quedan para más adelante.
+- When you start, resume, clear (`/clear`) or compact the conversation, the
+  `SessionStart` hook injects a **pointer** of a few script-generated lines
+  (`scripts/devsquad_puntero.py`, hard cap of 10,000 characters): active track
+  and its state, next task, last commit, blockers, available memory and the
+  suggested next step. "Where did I leave off?" is an exact query on the state,
+  not a search. (`PreCompact` cannot inject context; after compacting,
+  `SessionStart` restores it.)
+- **Memory, level 1**: one file per decision or learning in
+  `.devsquad/memoria/{decisiones,aprendizajes}/`, and a generated index
+  (`.devsquad/memoria/indice.md`) that the agent reads with Read; the
+  `buscar-memoria` skill explains how. The Orchestrator has no `Bash`. Levels 2
+  (full text) and 3 (meaning) are left for later.
 
-### Script `devsquad-estado`
+### The `devsquad-estado` script
 
-Cambia y valida ese estado: `devsquad-estado init | crear | transicion |
-tarea | aprobar | cancelar | cerrar | estado | validar | migrar` (`--help` para el detalle). Es un
-script de Python 3.8+ sin dependencias; el plugin lo pone en el `PATH` de la
-herramienta Bash. **Límite conocido:** necesita `python3` (y `sh`); sin ellos,
-por ejemplo en Windows sin Python, falla con un mensaje claro.
+It changes and validates that state: `devsquad-estado init | crear | transicion |
+tarea | aprobar | cancelar | cerrar | estado | validar | migrar` (`--help` for
+the detail). It is a Python 3.8+ script with no dependencies; the plugin puts it
+on the Bash tool's `PATH`. **Known limit:** it needs `python3` (and `sh`);
+without them, for example on Windows without Python, it fails with a clear
+message.
 
-No necesitas tocar estos archivos manualmente; el equipo de agentes los lee
-y actualiza por ti.
+You do not need to touch these files by hand; the team of agents reads and
+updates them for you.

@@ -76,16 +76,16 @@ class Base(unittest.TestCase):
 class PruebasPuntero(Base):
     def test_proyecto_sin_nada(self):
         t = self.puntero()
-        self.assertIn("Perfil: FALTA", t)
+        self.assertIn("Profile: MISSING", t)
         self.assertIn("iniciar-proyecto", t)
-        self.assertIn("Track activo: ninguno", t)
+        self.assertIn("Active track: none", t)
         self.assertIn(self.p, t)
 
     def test_con_perfil_sin_estado_sugiere_bsa(self):
         self.escribir(".devsquad/perfil.md", PERFIL)
         t = self.puntero()
-        self.assertIn("Perfil: ok", t)
-        self.assertIn("delegar en `bsa`", t)
+        self.assertIn("Profile: ok", t)
+        self.assertIn("delegate to `bsa`", t)
 
     def test_track_en_borrador_sin_tareas_pide_tareas_al_arquitecto(self):
         self.proyecto_con_track()
@@ -93,20 +93,20 @@ class PruebasPuntero(Base):
         for f in ("requerimientos", "arquitectura", "diseno"):
             self.escribir(".devsquad/%s.md" % f, "# x\n")
         t = self.puntero()
-        self.assertIn("Track activo: 001-pedidos (borrador) · Gestión de pedidos · tareas 0/0", t)
-        self.assertIn("pedirle al `arquitecto` las tareas", t)
+        self.assertIn("Active track: 001-pedidos (borrador) · Gestión de pedidos · tasks 0/0", t)
+        self.assertIn("ask the `arquitecto` for the tasks", t)
 
     def test_track_en_borrador_con_tareas_espera_la_aprobacion_humana(self):
         self.proyecto_con_track()
         for f in ("requerimientos", "arquitectura", "diseno"):
             self.escribir(".devsquad/%s.md" % f, "# x\n")
         t = self.puntero()
-        self.assertIn("Siguiente tarea: 1 \"Crear el modelo\"", t)
-        self.assertIn("Aprobaciones humanas: arquitectura falta · diseño falta", t)
-        self.assertIn("esperar la aprobación humana de arquitectura, diseno (no la registres tú)", t)
+        self.assertIn("Next task: 1 \"Crear el modelo\"", t)
+        self.assertIn("Human approvals: architecture missing · design missing", t)
+        self.assertIn("wait for the human approval of arquitectura, diseno (do not record it yourself)", t)
         self.assertIn("/devsquad-ai:aprobar arquitectura", t)
         self.aprobar_planeacion()
-        self.assertIn("Aprobaciones humanas: arquitectura ok · diseño ok", self.puntero())
+        self.assertIn("Human approvals: architecture ok · design ok", self.puntero())
 
     def test_cumplidos_los_criterios_espera_la_aprobacion_de_cierre(self):
         self.proyecto_con_track()
@@ -117,8 +117,8 @@ class PruebasPuntero(Base):
             self.estado("tarea", t, "hecha", "--commit", "abcdef1")
         self.estado("transicion", "en_revision")
         t = self.puntero()
-        self.assertIn("espera la aprobación humana de cierre", t)
-        self.assertIn("política de cierre: humano", t)
+        self.assertIn("waiting for the human closing approval", t)
+        self.assertIn("closing policy: humano", t)
 
     def test_track_en_progreso_con_tareas_hechas(self):
         self.proyecto_con_track()
@@ -128,9 +128,9 @@ class PruebasPuntero(Base):
         self.estado("tarea", "1", "hecha", "--commit", "abcdef1")
         t = self.puntero()
         self.assertIn("(en_progreso)", t)
-        self.assertIn("tareas 1/2", t)
-        self.assertIn("Siguiente tarea: 2 \"Validar horario\"", t)
-        self.assertIn("Bloqueos: ninguno", t)
+        self.assertIn("tasks 1/2", t)
+        self.assertIn("Next task: 2 \"Validar horario\"", t)
+        self.assertIn("Blockers: none", t)
 
     def test_track_bloqueado_lo_dice(self):
         self.proyecto_con_track()
@@ -138,7 +138,7 @@ class PruebasPuntero(Base):
         self.estado("transicion", "listo")
         self.estado("transicion", "en_progreso")
         self.estado("transicion", "bloqueado")
-        self.assertIn("el track está bloqueado (antes: en_progreso)", self.puntero())
+        self.assertIn("the track is blocked (before: en_progreso)", self.puntero())
 
     def test_ultimo_commit_de_git(self):
         subprocess.run(["git", "-C", self.p, "init", "-q"], check=True)
@@ -146,12 +146,12 @@ class PruebasPuntero(Base):
         subprocess.run(["git", "-C", self.p, "add", "-A"], check=True)
         subprocess.run(["git", "-C", self.p, "-c", "user.name=t", "-c", "user.email=t@e.c", "commit", "-q", "-m",
                         "Primer commit"], check=True)
-        self.assertIn("Último commit: ", self.puntero())
+        self.assertIn("Last commit: ", self.puntero())
         self.assertIn("Primer commit", self.puntero())
 
     def test_sin_git(self):
-        self.assertIn("Último commit: sin Git", self.puntero()) if shutil.which("git") is None else \
-            self.assertRegex(self.puntero(), "Último commit: (sin Git|sin commits)")
+        self.assertIn("Last commit: no Git", self.puntero()) if shutil.which("git") is None else \
+            self.assertRegex(self.puntero(), "Last commit: (no Git|no commits)")
 
     def test_tamano_acotado_aunque_los_datos_sean_enormes(self):
         self.escribir(".devsquad/perfil.md", PERFIL)
@@ -174,7 +174,7 @@ class PruebasPuntero(Base):
     def test_estado_ilegible_no_rompe_el_arranque(self):
         self.escribir(".devsquad/perfil.md", PERFIL)
         self.escribir(".devsquad/estado.json", "{roto")
-        self.assertIn("Estado: ILEGIBLE", self.puntero())
+        self.assertIn("State: UNREADABLE", self.puntero())
 
     def test_no_hay_rutas_ni_nombres_fijos(self):
         t = self.puntero()
@@ -192,7 +192,7 @@ class PruebasSessionStart(Base):
         self.proyecto_con_track()
         for origen in ("startup", "resume", "clear", "compact"):
             ctx = self.contexto(self.sessionstart(origen))
-            self.assertIn("Track activo: 001-pedidos", ctx, origen)
+            self.assertIn("Active track: 001-pedidos", ctx, origen)
             self.assertLessEqual(len(ctx), MAX)
 
     def test_el_puntero_trae_la_ruta_del_indice_para_leerlo_con_read(self):
@@ -208,7 +208,7 @@ class PruebasSessionStart(Base):
 
     def test_en_un_proyecto_nuevo_no_crea_carpetas(self):
         ctx = self.contexto(self.sessionstart())
-        self.assertIn("FALTA", ctx)
+        self.assertIn("MISSING", ctx)
         self.assertFalse(os.path.exists(self.ruta(".devsquad")))
 
     def test_el_hook_esta_configurado_para_los_cuatro_origenes(self):
@@ -231,16 +231,16 @@ class PruebasMemoria(Base):
 
     def test_indice_vacio(self):
         i = self.indice()
-        self.assertIn("0 decisiones · 0 aprendizajes · 0 tracks", i)
-        self.assertEqual(i.count("(ninguno)"), 3)
+        self.assertIn("0 decisions · 0 learnings · 0 tracks", i)
+        self.assertEqual(i.count("(none)"), 3)
 
     def test_indice_lista_registros_con_ruta_y_etiquetas(self):
         self.registro("decisiones", "2026-10-04-sqlite", "2026-10-04", "Usar SQLite al inicio", "base-de-datos, costo", "001-pedidos")
         self.registro("decisiones", "2026-10-01-api", "2026-10-01", "API REST")
         self.registro("aprendizajes", "a1", "2026-10-05", "Los .env no se versionan")
         i = self.indice()
-        self.assertIn("2 decisiones · 1 aprendizajes", i)
-        self.assertIn("- 2026-10-04 · Usar SQLite al inicio · etiquetas: base-de-datos, costo · track 001-pedidos "
+        self.assertIn("2 decisions · 1 learnings", i)
+        self.assertIn("- 2026-10-04 · Usar SQLite al inicio · tags: base-de-datos, costo · track 001-pedidos "
                       "→ .devsquad/memoria/decisiones/2026-10-04-sqlite.md", i)
         self.assertLess(i.index("API REST"), i.index("Usar SQLite"))  # ordenados por fecha
 
@@ -264,7 +264,7 @@ class PruebasMemoria(Base):
     def test_el_puntero_cuenta_la_memoria(self):
         self.proyecto_con_track()
         self.registro("decisiones", "d1", "2026-10-04", "Algo")
-        self.assertIn("Memoria: 1 decisiones, 0 aprendizajes, 0 tracks cerrados", self.puntero())
+        self.assertIn("Memory: 1 decisions, 0 learnings, 0 closed tracks", self.puntero())
 
     def test_el_indice_se_regenera_al_terminar_un_agente(self):
         self.proyecto_con_track()
@@ -298,14 +298,14 @@ class PruebasPrompts(unittest.TestCase):
             t = f.read()
         self.assertIn("track_activo", t)
         self.assertIn("plan.md", t)
-        self.assertIn("- [ ] <id> <texto>", t)
+        self.assertIn("- [ ] <id> <text>", t)
 
     def test_el_orquestador_no_tiene_bash_y_sabe_leer_el_puntero(self):
         with open(os.path.join(PLUGIN, "agents", "orquestador.md"), encoding="utf-8") as f:
             t = f.read()
         tools = [l for l in t.split("\n") if l.startswith("tools:")][0]
         self.assertNotIn("Bash", tools)
-        self.assertIn("puntero de arranque", t)
+        self.assertIn("startup pointer", t)
         self.assertIn("buscar-memoria", t)
 
     def test_los_agentes_pueden_usar_la_memoria_de_la_factory(self):
@@ -342,14 +342,14 @@ class PruebasPrompts(unittest.TestCase):
         with open(os.path.join(PLUGIN, "agents", "orquestador.md"), encoding="utf-8") as f:
             t = f.read()
         for texto in ("/devsquad-ai:aprobar arquitectura", "/devsquad-ai:aprobar cierre", 'kind: "approval"',
-                      "/devsquad-ai:cancelar", "no las registras tú"):
+                      "/devsquad-ai:cancelar", "you do not record the approval"):
             self.assertIn(texto, t)
 
     def test_el_arquitecto_declara_la_politica_de_cierre_y_solo_humano(self):
         with open(os.path.join(PLUGIN, "agents", "arquitecto.md"), encoding="utf-8") as f:
             t = f.read()
-        self.assertIn("**Política de cierre**: humano", t)
-        self.assertIn("única disponible hoy", t)
+        self.assertIn("**Closing policy**: humano", t)
+        self.assertIn("only one available today", t)
 
     def test_la_skill_de_memoria_existe(self):
         self.assertTrue(os.path.exists(os.path.join(PLUGIN, "skills", "buscar-memoria", "SKILL.md")))

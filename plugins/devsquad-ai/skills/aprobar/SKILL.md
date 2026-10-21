@@ -1,26 +1,28 @@
 ---
-description: "Aprobación humana de arquitectura, diseño, comandos de verificación o cierre de un track. Solo la persona la invoca (por ejemplo /devsquad-ai:aprobar arquitectura); el modelo no puede."
+description: "Human approval of the architecture, the design, the verification commands or the closing of a track. Only the person invokes it (for example /devsquad-ai:aprobar arquitectura); the model cannot."
 disable-model-invocation: true
 argument-hint: "arquitectura | diseno | comandos | cierre"
 ---
 
-# Aprobar (decisión de la persona)
+# Approve (the person's decision)
 
-La persona escribió este comando. **La aprobación no la registras tú**: un hook de
-DevSquad AI la procesó con código antes de que este mensaje llegara a ti, y su
-resultado viene en el contexto como «RESULTADO DEL HOOK».
+The person typed this command. **You do not record the approval**: a
+DevSquad AI hook processed it with code before this message reached you, and
+its result is in the context as "HOOK RESULT".
 
-Argumentos recibidos: $ARGUMENTS
+Arguments received: $ARGUMENTS
 
-- Si el contexto trae el resultado del hook, díselo a la persona con tus palabras
-  (qué se aprobó y en qué quedó el track) y sigue con el siguiente paso del
-  puntero de arranque.
-- Si el resultado dice que **no se registró**, explica el motivo tal cual y qué
-  falta (por ejemplo «falta `arquitectura.md`»).
-- Si no hay resultado del hook, dile a la persona que **no quedó registrada** y que
-  puede ejecutar ella misma, en su terminal, `devsquad-estado aprobar <objeto> --fuente terminal`.
-  Nunca digas que quedó aprobado si no viste el resultado del hook.
+- If the context carries the hook's result, tell the person in your own words
+  (what was approved and where the track ended up) and carry on with the next
+  step from the startup pointer.
+- If the result says it **was not recorded**, explain the reason as it is and
+  what is missing (for example "`arquitectura.md` is missing").
+- If there is no hook result, tell the person that it **was not recorded** and
+  that they can run, themselves, in their terminal,
+  `devsquad-estado aprobar <object> --fuente terminal`. Never say it was
+  approved if you did not see the hook's result.
 
-Objetos: `arquitectura` y `diseno` (los documentos tal como están ahora; si cambian
-después, hay que aprobar de nuevo), `comandos` (los comandos de verificación del
-perfil), `cierre` (el cierre del track, ligado al commit exacto).
+Objects: `arquitectura` and `diseno` (the documents as they are now; if they
+change afterwards, they must be approved again), `comandos` (the profile's
+verification commands), `cierre` (the track's closing, tied to the exact
+commit).

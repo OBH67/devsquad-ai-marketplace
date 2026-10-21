@@ -89,7 +89,7 @@ class PruebasAprobacionParaListo(Base):
     def test_sin_aprobaciones_no_pasa_a_listo_y_dice_como_aprobar(self):
         self.track(aprobar=False)
         r = self.estado("transicion", "listo", esperado=1)
-        self.assertIn("aprobación humana", r.stderr)
+        self.assertIn("human approval", r.stderr)
         self.assertIn("/devsquad-ai:aprobar arquitectura", r.stderr)
         self.assertIn('subject "diseno"', r.stderr)
 
@@ -115,7 +115,7 @@ class PruebasAprobacionParaListo(Base):
         self.track()
         self.escribir(("diseno.md",), "# Diseño cambiado por el modelo\n")
         r = self.estado("transicion", "listo", esperado=1)
-        self.assertIn("diseno.md cambió", r.stderr)
+        self.assertIn("diseno.md changed", r.stderr)
         self.estado("aprobar", "diseno", "--fuente", "terminal")  # la persona vuelve a aprobar
         self.estado("transicion", "listo")
 
@@ -123,7 +123,7 @@ class PruebasAprobacionParaListo(Base):
         self.estado("init")
         self.estado("crear", "x")
         r = self.estado("aprobar", "arquitectura", esperado=1)
-        self.assertIn("no hay nada que aprobar", r.stderr)
+        self.assertIn("nothing to approve", r.stderr)
 
     def test_validar_marca_aprobaciones_obsoletas_en_tracks_avanzados(self):
         self.track()
@@ -131,7 +131,7 @@ class PruebasAprobacionParaListo(Base):
         self.estado("validar")
         self.escribir(("arquitectura.md",), "# otra\n")
         r = self.estado("validar", esperado=1)
-        self.assertIn("obsoleta", r.stderr)
+        self.assertIn("stale", r.stderr)
 
     def test_fuente_invalida(self):
         self.track(aprobar=False)
@@ -154,8 +154,8 @@ class PruebasPoliticaDeCierre(Base):
     def test_automatico_se_rechaza_mientras_no_exista_el_revisor(self):
         self.track(politica_linea="Política de cierre: automatico", aprobar=False)
         r = self.estado("aprobar", "arquitectura", "--fuente", "terminal", esperado=1)
-        self.assertIn("revisor", r.stderr)
-        self.assertIn("fase C", r.stderr)
+        self.assertIn("reviewer", r.stderr)
+        self.assertIn("phase C", r.stderr)
         self.assertNotIn("aprobaciones", self.leer_json("tracks", "001-inicial", "track.json"))
 
     def test_automatico_con_acento_tambien_se_rechaza(self):
@@ -165,7 +165,7 @@ class PruebasPoliticaDeCierre(Base):
     def test_politica_desconocida_se_rechaza(self):
         self.track(politica_linea="Política de cierre: cuando sea", aprobar=False)
         r = self.estado("aprobar", "arquitectura", "--fuente", "terminal", esperado=1)
-        self.assertIn("no es válida", r.stderr)
+        self.assertIn("is not valid", r.stderr)
 
     def test_cambio_de_politica_en_una_reaprobacion_se_avisa(self):
         self.track()
@@ -178,7 +178,7 @@ class PruebasPoliticaDeCierre(Base):
             json.dump(track, f)
         self.escribir(("arquitectura.md",), "# A\n\nPolítica de cierre: humano\n")
         r = self.estado("aprobar", "arquitectura", "--fuente", "terminal")
-        self.assertIn("ATENCIÓN", r.stdout)
+        self.assertIn("ATTENTION", r.stdout)
 
     def test_automatico_sin_revisor_no_cierra_aunque_este_escrito_en_track_json(self):
         self.hasta_en_revision()
@@ -188,9 +188,9 @@ class PruebasPoliticaDeCierre(Base):
         with open(ruta, "w", encoding="utf-8") as f:
             json.dump(track, f)
         r = self.estado("cerrar", esperado=1)
-        self.assertIn("revisor", r.stderr)
+        self.assertIn("reviewer", r.stderr)
         r = self.estado("validar", esperado=1)
-        self.assertIn("sin agente revisor", r.stderr)
+        self.assertIn("without a reviewer agent", r.stderr)
 
     def test_automatico_cierra_con_criterios_objetivos_cuando_existe_el_revisor(self):
         """Con el revisor (simulado) el código cierra solo, sin aprobación humana."""
@@ -229,7 +229,7 @@ class PruebasPoliticaDeCierre(Base):
         original = E.revisor_disponible
         E.revisor_disponible = lambda: True
         try:
-            self.assertIn("falta revision.json", E.motivo_no_cerrable(self.p, E.cargar_track(self.p, "001-inicial")))
+            self.assertIn("revision.json is missing", E.motivo_no_cerrable(self.p, E.cargar_track(self.p, "001-inicial")))
         finally:
             E.revisor_disponible = original
 
@@ -239,7 +239,7 @@ class PruebasCierreHumano(Base):
         self.hasta_en_revision()
         self.commit()
         r = self.estado("cerrar", esperado=1)
-        self.assertIn("política de cierre `humano`", r.stderr)
+        self.assertIn("closing policy `humano`", r.stderr)
         self.assertIn("/devsquad-ai:aprobar cierre", r.stderr)
 
     def test_aprobar_cierre_exige_criterios_objetivos(self):
@@ -248,7 +248,7 @@ class PruebasCierreHumano(Base):
         self.estado("transicion", "en_progreso")
         self.commit()
         r = self.estado("aprobar", "cierre", esperado=1)
-        self.assertIn("faltan tareas", r.stderr)
+        self.assertIn("tasks still to complete", r.stderr)
 
     def test_aprobar_cierre_exige_git_con_commits(self):
         self.hasta_en_revision()
@@ -270,8 +270,8 @@ class PruebasCierreHumano(Base):
         self.estado("aprobar", "cierre", "--fuente", "terminal")
         self.commit("b.txt", "b")
         r = self.estado("cerrar", esperado=1)
-        self.assertIn("obsoleta", r.stderr)
-        self.assertIn("commits nuevos", r.stderr)
+        self.assertIn("stale", r.stderr)
+        self.assertIn("new commits", r.stderr)
         self.estado("aprobar", "cierre", "--fuente", "terminal")  # la persona vuelve a aprobar el nuevo HEAD
         self.estado("cerrar")
 
@@ -288,7 +288,7 @@ class PruebasCancelar(Base):
         self.track()
         self.estado("cancelar", esperado=2)  # --motivo es obligatorio
         r = self.estado("cancelar", "--motivo", " ", esperado=1)
-        self.assertIn("motivo", r.stderr)
+        self.assertIn("reason", r.stderr)
 
     def test_cancelar_libera_el_lugar_y_conserva_el_historial(self):
         self.track()
@@ -347,7 +347,7 @@ class PruebasHuellaDeComandos(Base):
     def test_sin_comandos_declarados_no_hay_nada_que_aprobar(self):
         self.escribir(("perfil.md",), PERFIL.replace("- Lint: `true`\n- Pruebas: `true`", "N/A"))
         r = self.estado("aprobar", "comandos", esperado=1)
-        self.assertIn("no declara comandos", r.stderr)
+        self.assertIn("declares no verification commands", r.stderr)
 
     def test_la_huella_cambia_si_cambian_los_comandos(self):
         sys.path.insert(0, SCRIPTS)

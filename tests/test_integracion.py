@@ -112,7 +112,7 @@ class Escenario(unittest.TestCase):
     def planea(self, politica="humano"):
         """BSA → Arquitecto (con tareas) → Diseñador, sin aprobaciones humanas todavía."""
         self.escribir(".devsquad/requerimientos.md", "# Requerimientos — Inicial\n")
-        self.assertIn("creado", self.termina("bsa"))
+        self.assertIn("created", self.termina("bsa"))
         self.delega("arquitecto")
         self.escribir(".devsquad/arquitectura.md", ARQUITECTURA % politica)
         self.escribir(".devsquad/tracks/001-inicial/plan.md", "## Tareas\n- [ ] 1 App\n- [ ] 2 Pruebas\n")
@@ -141,31 +141,31 @@ class Escenario(unittest.TestCase):
 
 class FlujoCompletoConCierreHumano(Escenario):
     def test_de_la_idea_al_cierre_con_las_tres_aprobaciones_humanas(self):
-        self.assertIn("falta", self.planea().lower())  # el diseñador avisa de lo que falta aprobar
+        self.assertIn("missing", self.planea().lower())  # el diseñador avisa de lo que missing aprobar
         self.assertEqual(self.estado_track(), "borrador")  # sin aprobaciones no hay `listo`
         self.delega("coder", esperado=2)  # y el coder queda bloqueado
 
         m1, m2 = self.aprueba_planeacion()
-        self.assertIn("Aprobación de arquitectura registrada", m1)
+        self.assertIn("Approval of arquitectura recorded", m1)
         self.assertIn("borrador → listo", m2)  # la segunda aprobación desbloquea el track
         self.assertEqual(self.estado_track(), "listo")
         reg = self.json(".devsquad/tracks/001-inicial/track.json")["aprobaciones"]["arquitectura"]
         self.assertEqual((reg["fuente"], reg["por"]), ("terminal", "Ana Prueba"))
         self.assertEqual(self.json(".devsquad/tracks/001-inicial/track.json")["politica_cierre"], "humano")
 
-        self.assertIn("No se ejecutaron", self.implementa())  # comandos del perfil sin aprobar: no se ejecutan
+        self.assertIn("were not run", self.implementa())  # comandos del perfil sin aprobar: no se ejecutan
         self.assertEqual(self.estado_track(), "en_progreso")  # y el track no avanza
         mensaje = self.aprueba_comandos()  # al aprobarlos, el código verifica y avanza el track
-        self.assertIn("Aprobados los comandos", mensaje)
+        self.assertIn("Approved the profile's verification commands", mensaje)
         self.assertIn("en_progreso → en_revision", mensaje)
         self.assertEqual(self.estado_track(), "en_revision")
 
         r = self.hook("stop", {"hook_event_name": "Stop"}, agente="orquestador")
-        self.assertIn("espera la aprobación de cierre", self.mensajes(r))
+        self.assertIn("waiting for the person's closing approval", self.mensajes(r))
         self.assertEqual(self.estado_track(), "en_revision")  # Stop informa; no cierra
 
         mensaje, _ = self.persona_escribe("/%s:aprobar cierre" % NOMBRE)
-        self.assertIn("Track 001-inicial cerrado", mensaje)
+        self.assertIn("Track 001-inicial closed", mensaje)
         self.assertEqual(self.estado_track(), "cerrado")
         self.assertIsNone(self.json(".devsquad/estado.json")["track_activo"])
         self.estado("validar")
@@ -178,7 +178,7 @@ class FlujoCompletoConCierreHumano(Escenario):
         self.estado("aprobar", "cierre", "--fuente", "terminal")
         self.commit("src/extra.py", "x = 2\n")  # alguien agrega un commit después de aprobar
         r = self.estado("cerrar", esperado=1)
-        self.assertIn("obsoleta", r.stderr)
+        self.assertIn("stale", r.stderr)
         self.assertEqual(self.estado_track(), "en_revision")
 
     def test_si_el_modelo_cambia_la_arquitectura_la_aprobacion_se_vuelve_obsoleta(self):
@@ -188,7 +188,7 @@ class FlujoCompletoConCierreHumano(Escenario):
         self.escribir(".devsquad/arquitectura.md", ARQUITECTURA % "humano" + "\nCambio posterior del modelo.\n")
         self.estado("validar", esperado=1)  # el estado ya no es coherente
         r = self.delega("coder", esperado=2)  # y el coder no arranca con una aprobación obsoleta
-        self.assertIn("arquitectura.md cambió", r.stderr)
+        self.assertIn("arquitectura.md changed", r.stderr)
         self.persona_escribe("/%s:aprobar arquitectura" % NOMBRE)  # la persona revisa y vuelve a aprobar
         self.delega("coder")
         self.assertEqual(self.estado_track(), "en_progreso")
@@ -213,7 +213,7 @@ class AprobacionesFabricadas(Escenario):
                         "python3 plugins/devsquad-ai/scripts/devsquad_estado.py cancelar --motivo x",
                         "echo hola; devsquad-estado   aprobar   comandos"):
             r = self.agente("coder", "Bash", {"command": comando}, esperado=2)
-            self.assertIn("decisión de la persona", r.stderr, comando)
+            self.assertIn("the person's decision", r.stderr, comando)
         self.agente("coder", "Bash", {"command": "devsquad-estado tarea 1 hecha --commit abc1234"})  # lo legítimo, sí
         self.agente("coder", "Bash", {"command": "devsquad-estado estado"})
 
@@ -231,18 +231,18 @@ class AprobacionesFabricadas(Escenario):
         track["politica_cierre"] = "automatico"
         self.escribir(".devsquad/tracks/001-inicial/track.json", json.dumps(track))
         r = self.hook("subagentstop", {"hook_event_name": "SubagentStop", "agent_id": "a1"}, agente="coder", esperado=2)
-        self.assertIn("solo la persona puede fijarlas", r.stderr)
+        self.assertIn("only the person can set them", r.stderr)
 
     def test_el_hook_si_puede_escribirlos_por_codigo(self):
         """Las compuertas son sobre las herramientas del modelo; el hook escribe con su propio código."""
         mensaje, _ = self.persona_escribe("/%s:aprobar arquitectura" % NOMBRE)
-        self.assertIn("registrada", mensaje)
+        self.assertIn("recorded", mensaje)
 
     def test_la_politica_automatico_se_rechaza_aunque_la_proponga_el_arquitecto(self):
         self.escribir(".devsquad/arquitectura.md", ARQUITECTURA % "automatico")
         mensaje, _ = self.persona_escribe("/%s:aprobar arquitectura" % NOMBRE)
-        self.assertIn("No se registró la aprobación", mensaje)
-        self.assertIn("revisor", mensaje)
+        self.assertIn("The approval was not recorded", mensaje)
+        self.assertIn("reviewer", mensaje)
         self.assertEqual(self.estado_track(), "borrador")
 
     def test_el_texto_del_chat_sin_el_comando_no_aprueba(self):
@@ -261,7 +261,7 @@ class CancelarTrack(Escenario):
         self.planea()
         self.aprueba_planeacion()
         mensaje, _ = self.persona_escribe("/%s:cancelar El cliente cambió de idea" % NOMBRE)
-        self.assertIn("cancelado", mensaje)
+        self.assertIn("cancelled", mensaje)
         track = self.json(".devsquad/tracks/001-inicial/track.json")
         self.assertEqual((track["estado"], track["cancelacion"]["motivo"]), ("cancelado", "El cliente cambió de idea"))
         self.assertEqual(track["cancelacion"]["estado_previo"], "listo")
@@ -273,7 +273,7 @@ class CancelarTrack(Escenario):
     def test_cancelar_sin_motivo_no_hace_nada(self):
         self.planea()
         mensaje, _ = self.persona_escribe("/%s:cancelar" % NOMBRE)
-        self.assertIn("motivo", mensaje)
+        self.assertIn("reason", mensaje)
         self.assertEqual(self.estado_track(), "borrador")
 
 
@@ -286,7 +286,7 @@ class HuellaDeComandos(Escenario):
         self.delega("coder")
         self.commit()
         mensaje = self.termina("coder")
-        self.assertIn("cambiaron", mensaje)  # no se ejecutó el comando nuevo
+        self.assertIn("changed", mensaje)  # no se ejecutó el comando nuevo
         self.assertIn("/devsquad-ai:aprobar comandos", mensaje)
         self.assertEqual(self.estado_track(), "en_progreso")
 
