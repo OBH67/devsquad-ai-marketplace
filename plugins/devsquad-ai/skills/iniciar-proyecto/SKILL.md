@@ -1,92 +1,93 @@
 ---
-description: Inicializa el perfil de la persona y del proyecto para DevSquad AI, preguntando nombre preferido, nivel técnico, idioma, stack, archivos protegidos y reglas de negocio si aplica. Usar la primera vez que alguien trabaja con DevSquad AI en un proyecto, o cuando pida "reiniciar mi perfil" o "configurar DevSquad AI".
+description: Initializes the person's and the project's profile for DevSquad AI, asking for preferred name, technical level, language, stack, protected files and business rules if applicable. Use the first time someone works with DevSquad AI on a project, or when they ask to "reset my profile" or "set up DevSquad AI".
 ---
 
-# Iniciar proyecto DevSquad AI
+# Start a DevSquad AI project
 
-Crea el archivo `.devsquad/perfil.md` que todos los agentes de DevSquad AI
-(orquestador, bsa, arquitecto, coder) leen para adaptar su lenguaje y nivel
-de detalle.
+Creates the `.devsquad/perfil.md` file that all DevSquad AI agents
+(orquestador, bsa, arquitecto, coder) read to adapt their language and level
+of detail.
 
-## Pasos
+## Steps
 
-1. Verifica si ya existe `.devsquad/perfil.md`. Si existe, muéstraselo a la
-   persona y pregunta si quiere mantenerlo o actualizarlo — no lo
-   sobrescribas sin confirmar.
+1. Check whether `.devsquad/perfil.md` already exists. If it does, show it to
+   the person and ask whether they want to keep it or update it — do not
+   overwrite it without confirming.
 
-2. Pregunta, de forma conversacional (una o dos preguntas a la vez, no un
-   formulario largo de golpe):
-   - **Nombre preferido**: ¿cómo le gustaría que se dirijan a ella?
-   - **Nivel técnico**: ¿tiene experiencia con desarrollo de software, o
-     prefiere que se le explique todo sin dar por hecho términos técnicos?
-   - **Idioma preferido** para la conversación.
-   - **Stack**: ¿el stack ya está decidido, o quiere que el Arquitecto lo
-     proponga? Si ya está decidido, pídele que lo describa en sus propias
-     palabras: lenguaje, frameworks, dónde corre (su computadora, un
-     servidor, la nube), y restricciones duras (ej. "sin APIs de pago",
-     "todo local", "solo lo que ya está aprobado en mi empresa"). Guarda lo
-     que diga tal cual lo describió, sin traducirlo a tus propios términos
-     ni completarlo con herramientas que ella no mencionó.
-   - **Archivos protegidos**: ¿hay código o archivos ya terminados que no
-     deben regenerarse? Si la pregunta no le queda clara, da ejemplos: "un
-     runtime que ya depuraste y funciona", "un archivo de configuración que
-     ya quedó bien", "un módulo que ya está probado y no quieres que nadie
-     toque". Guárdalo como lista de rutas o patrones (ej. `src/runtime/`,
-     `config/*.yaml`).
-   - **Contexto de empresa** (opcional): si este proyecto es para una
-     empresa, ¿hay reglas de negocio, restricciones o convenciones que
-     DevSquad AI debería respetar? (ej. siempre usar cierto proveedor, no
-     usar cierto tipo de dato, cumplir alguna política interna)
+2. Ask, conversationally (one or two questions at a time, not a long form all
+   at once):
+   - **Preferred name**: how would they like to be addressed?
+   - **Technical level**: do they have experience with software
+     development, or do they prefer that everything be explained without
+     taking technical terms for granted?
+   - **Preferred language** for the conversation.
+   - **Stack**: is the stack already decided, or do they want the Architect
+     to propose it? If it is already decided, ask them to describe it in
+     their own words: language, frameworks, where it runs (their computer, a
+     server, the cloud), and hard constraints (e.g. "no paid APIs", "all
+     local", "only what is already approved at my company"). Save what they
+     say exactly as they described it, without translating it into your own
+     terms or completing it with tools they did not mention.
+   - **Protected files**: is there finished code or files that must not be
+     regenerated? If the question is not clear to them, give examples: "a
+     runtime you already debugged and that works", "a configuration file
+     that is already right", "a module that is already tested and you don't
+     want anyone to touch". Save it as a list of paths or patterns (e.g.
+     `src/runtime/`, `config/*.yaml`).
+   - **Company context** (optional): if this project is for a company, are
+     there business rules, constraints or conventions that DevSquad AI
+     should respect? (e.g. always use a certain provider, don't use a
+     certain kind of data, comply with an internal policy)
 
-   - **Comandos de verificación** (opcional): ¿con qué comandos se revisa
-     que el código funciona? (por ejemplo el linter y las pruebas). Si la
-     persona no sabe, déjalo en "N/A": el Coder los propondrá cuando haya
-     un stack. Guarda cada comando tal cual, entre acentos graves.
+   - **Verification commands** (optional): which commands are used to check
+     that the code works? (for example the linter and the tests). If the
+     person doesn't know, leave it as "N/A": the Coder will propose them once
+     there is a stack. Save each command as is, between backticks.
 
-   Las preguntas de **Stack** y **Archivos protegidos** son independientes
-   del nivel técnico: hazlas siempre, a cualquier persona. Alguien técnico
-   puede querer igual que le propongan el stack, y alguien no técnico puede
-   traer una restricción real de su empresa o un archivo que no se debe
-   tocar.
+   The **Stack** and **Protected files** questions are independent of the
+   technical level: always ask them, to anyone. Someone technical may still
+   want the stack proposed to them, and someone non-technical may bring a
+   real constraint from their company or a file that must not be touched.
 
-3. Antes de continuar, confírmale a la persona en una frase lo que
-   entendiste de cada uno de esos dos puntos, y espera que lo valide o lo
-   corrija — no interpretes en silencio y avances. Por ejemplo: "Entendí
-   que tu stack es Python con Ollama corriendo local, sin servicios de
-   pago, ¿correcto?" y "Entendí que no debo tocar `src/runtime/` ni
-   `config/settings.yaml`, ¿correcto?".
+3. Before continuing, confirm to the person in one sentence what you
+   understood about each of those two points, and wait for them to validate
+   or correct it — do not interpret silently and move on. For example: "I
+   understood that your stack is Python with Ollama running locally, with no
+   paid services, correct?" and "I understood that I must not touch
+   `src/runtime/` or `config/settings.yaml`, correct?".
 
-4. Crea la carpeta `.devsquad/` si no existe.
+4. Create the `.devsquad/` folder if it does not exist.
 
-5. Escribe `.devsquad/perfil.md` con esta estructura:
+5. Write `.devsquad/perfil.md` with this structure:
 
 ```markdown
-# Perfil DevSquad AI
+# DevSquad AI Profile
 
-- **Nombre preferido**: [nombre]
-- **Nivel técnico**: [no técnico / técnico — con una frase de contexto]
-- **Idioma**: [idioma]
-- **Stack**: [descripción tal cual la dio la persona, incluyendo
-  restricciones duras — o "Sin decidir: lo propone el Arquitecto"]
-- **Archivos protegidos**: [lista de rutas o patrones que no deben
-  modificarse ni regenerarse, o "N/A"]
-- **Reglas de negocio / contexto de empresa**: [texto libre, o "N/A"]
+- **Preferred name**: [name]
+- **Technical level**: [non-technical / technical — with one sentence of context]
+- **Language**: [language]
+- **Stack**: [description exactly as the person gave it, including hard
+  constraints — or "Undecided: the Architect proposes it"]
+- **Protected files**: [list of paths or patterns that must not be modified
+  or regenerated, or "N/A"]
+- **Business rules / company context**: [free text, or "N/A"]
 
-## Comandos de verificación
+## Verification commands
 
-Los ejecuta el hook de DevSquad AI antes de dejar terminar al Coder. Un
-comando por línea, entre acentos graves; si no hay, escribe `N/A`.
+They are run by the DevSquad AI hook before the Coder is allowed to finish.
+One command per line, between backticks; if there are none, write `N/A`.
 
-- Lint: `[comando]`
-- Pruebas: `[comando]`
+- Lint: `[command]`
+- Tests: `[command]`
 
-_Última actualización: [fecha]_
+_Last updated: [date]_
 ```
 
-5b. Si el perfil declara comandos de verificación, dile a la persona que **debe aprobarlos
-   ella misma** (escribiendo `/devsquad-ai:aprobar comandos` en la terminal; en la Factory
-   los aprueba la Factory): son comandos que el sistema ejecutará, y sin su aprobación no
-   se ejecutan. Si los cambia después, hay que aprobarlos otra vez.
+5b. If the profile declares verification commands, tell the person that they
+   **must approve them themselves** (by typing `/devsquad-ai:aprobar comandos`
+   in the terminal; in the Factory the Factory approves them): they are
+   commands the system will run, and without their approval they are not run.
+   If they change them later, they have to be approved again.
 
-6. Confirma a la persona, en una frase simple, que su perfil quedó guardado y que a partir de ahora DevSquad AI va a adaptarse a como le gusta trabajar.
-7. Entrega el control de vuelta al Orquestador para que continúe con el proyecto (fase de descubrimiento con el BSA si es un proyecto nuevo).
+6. Confirm to the person, in one simple sentence, that their profile was saved and that from now on DevSquad AI will adapt to how they like to work.
+7. Hand control back to the Orchestrator so it continues with the project (the discovery phase with the BSA if it is a new project).

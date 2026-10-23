@@ -1,69 +1,62 @@
 ---
-description: Checklist y principios de diseño visual con valor real (color, tipografía, layout, contraste) para usar al crear el sistema de diseño de un proyecto DevSquad AI, o al implementar/revisar código que debe seguir ese diseño. Para accesibilidad (WCAG), responsividad, Atomic Design y leyes de UX, ver la skill `estandares-frontend`. Usar siempre al generar diseño.md, y al verificar contraste/legibilidad antes de entregar una app al usuario.
+description: Checklist and principles of visual design with real value (color, typography, layout, contrast) to use when creating the design system of a DevSquad AI project, or when implementing/reviewing code that must follow that design. For accessibility (WCAG), responsiveness, Atomic Design and UX laws, see the `estandares-frontend` skill. Always use when generating diseno.md, and when verifying contrast/legibility before delivering an app to the user.
 ---
 
-# Diseño UI con valor real (DevSquad AI)
+# UI design with real value (DevSquad AI)
 
-Un diseño genérico (gris/azul por defecto, tipografía del sistema, sin
-personalidad) no cumple el objetivo de DevSquad AI. El objetivo es que
-cada proyecto se sienta diseñado a propósito para lo que es, no como una
-plantilla sin pensar.
+A generic design (default gray/blue, system typography, no personality) does
+not meet DevSquad AI's goal. The goal is for each project to feel designed on
+purpose for what it is, not like a template made without thought.
 
-Esta skill cubre paleta, tipografía, contraste y estados. Para
-accesibilidad técnica (WCAG, ARIA, teclado), diseño responsivo, Atomic
-Design y leyes de UX (Hick, Fitts), usa junto con esta la skill
-`estandares-frontend`.
+This skill covers palette, typography, contrast and states. For technical
+accessibility (WCAG, ARIA, keyboard), responsive design, Atomic Design and UX
+laws (Hick, Fitts), use the `estandares-frontend` skill together with this one.
 
-## Principios no negociables
+## Non-negotiable principles
 
-1. **Paleta con propósito, no default.** Define 4–6 colores con su valor
-   hexadecimal exacto: primario, secundario, uno o dos de acento, y los
-   semánticos (éxito/error/advertencia). Cada color debe tener una razón
-   ligada al proyecto, no ser "el azul de siempre".
-2. **Tipografía con personalidad.** Elige una fuente para títulos/display
-   y otra (o la misma familia con otro peso) para texto de cuerpo. Evita
-   la fuente por defecto del framework sin haberlo decidido a propósito.
-3. **Contraste verificado, no asumido.** Todo par texto/fondo debe cumplir
-   mínimo **4.5:1** de contraste (WCAG AA) para texto normal, 3:1 para
-   texto grande. Calcula o estima este número explícitamente para cada
-   combinación que definas — no lo des por hecho "porque se ve bien en la
-   pantalla en la que lo diseñaste".
-4. **Un solo modo de color, a propósito.** Decide explícitamente si el
-   proyecto tiene modo claro, oscuro, o ambos. Si el framework/plantilla
-   base trae estilos de modo oscuro por defecto (esto ya causó un bug real
-   en un proyecto DevSquad AI: CSS de dark-mode heredado del starter
-   template de Next.js, aplicado de forma inconsistente), dilo
-   explícitamente en el entregable y pide que ese CSS heredado se elimine
-   o se declare de forma consistente — no se puede dejar "a medias".
-5. **Estados, no solo la pantalla feliz.** Define cómo se ve cada pantalla
-   clave vacía, cargando, y con error — no solo con datos de ejemplo
-   perfectos.
-6. **Un elemento memorable, el resto disciplinado.** Elige una cosa (un
-   color de acento, una forma, una micro-interacción) que le dé
-   personalidad al proyecto, y mantén todo lo demás quieto alrededor de
-   ese elemento.
+1. **A palette with purpose, not a default.** Define 4–6 colors with their
+   exact hexadecimal value: primary, secondary, one or two accents, and the
+   semantic ones (success/error/warning). Each color must have a reason tied
+   to the project, not be "the usual blue".
+2. **Typography with personality.** Choose one font for headings/display and
+   another (or the same family with a different weight) for body text. Avoid
+   the framework's default font without having decided it on purpose.
+3. **Contrast verified, not assumed.** Every text/background pair must meet a
+   minimum of **4.5:1** contrast (WCAG AA) for normal text, 3:1 for large
+   text. Calculate or estimate this number explicitly for each combination
+   you define — do not take it for granted "because it looks good on the
+   screen where you designed it".
+4. **A single color mode, on purpose.** Decide explicitly whether the project
+   has light mode, dark mode, or both. If the base framework/template brings
+   dark-mode styles by default (this already caused a real bug in a DevSquad
+   AI project: dark-mode CSS inherited from the Next.js starter template,
+   applied inconsistently), say so explicitly in the deliverable and ask for
+   that inherited CSS to be removed or declared consistently — it cannot be
+   left "half done".
+5. **States, not only the happy screen.** Define how each key screen looks
+   empty, loading, and with an error — not only with perfect sample data.
+6. **One memorable element, the rest disciplined.** Choose one thing (an
+   accent color, a shape, a micro-interaction) that gives the project
+   personality, and keep everything else quiet around that element.
 
-## Checklist de verificación antes de entregar al Coder
+## Verification checklist before handing off to the Coder
 
-- [ ] Paleta con hex exactos y su propósito, no solo nombres ("terracota"
-      sin el hex no sirve para implementar).
-- [ ] Contraste de cada combinación texto/fondo verificado ≥ 4.5:1.
-- [ ] Tipografías nombradas explícitamente (nombre real, no "una fuente
-      moderna").
-- [ ] Modo claro/oscuro decidido explícitamente, no dejado a la plantilla
-      base.
-- [ ] Cada pantalla del proyecto tiene su estado vacío/error descrito.
-- [ ] Ver también el checklist de accesibilidad y responsividad de
+- [ ] Palette with exact hex values and their purpose, not only names
+      ("terracotta" without the hex is useless for implementing).
+- [ ] Contrast of each text/background combination verified ≥ 4.5:1.
+- [ ] Typefaces named explicitly (the real name, not "a modern font").
+- [ ] Light/dark mode decided explicitly, not left to the base template.
+- [ ] Each screen of the project has its empty/error state described.
+- [ ] See also the accessibility and responsiveness checklist of
       `estandares-frontend`.
 
-## Checklist de verificación antes de entregar al usuario (para Orquestador/Coder)
+## Verification checklist before delivering to the user (for Orchestrator/Coder)
 
-Esta sección se usa DESPUÉS de implementar, antes de decirle a la persona
-"ya puedes probarlo":
+This section is used AFTER implementing, before telling the person "you can
+try it now":
 
-- [ ] Si hay herramienta de navegador/captura de pantalla disponible,
-      tómala y revisa visualmente que el texto sea legible sobre su fondo
-      en cada pantalla — no asumas que compilar sin errores significa que
-      se ve bien.
-- [ ] Confirma que no quedó ningún estilo de la plantilla base sin usar o
-      contradictorio con la paleta definida en `diseño.md`.
+- [ ] If a browser/screenshot tool is available, take one and visually check
+      that the text is legible against its background on every screen — do
+      not assume that compiling without errors means it looks good.
+- [ ] Confirm that no style from the base template was left unused or
+      contradicting the palette defined in `diseno.md`.

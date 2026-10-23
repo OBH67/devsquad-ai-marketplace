@@ -11,7 +11,7 @@ Uso: devsquad_puntero.py [--raiz RUTA]
 import sys
 
 if sys.version_info < (3, 8):
-    sys.stderr.write("devsquad_puntero: se requiere Python 3.8 o superior.\n")
+    sys.stderr.write("devsquad_puntero: Python 3.8 or later is required.\n")
     sys.exit(1)
 
 import argparse
@@ -36,14 +36,14 @@ def ultimo_commit(raiz):
     try:
         r = subprocess.run(["git", "-C", raiz, "log", "-1", "--format=%h %s"], capture_output=True, text=True)
     except OSError:
-        return "sin Git"
-    return recortar(r.stdout, 100) if r.returncode == 0 and r.stdout.strip() else "sin commits"
+        return "no Git"
+    return recortar(r.stdout, 100) if r.returncode == 0 and r.stdout.strip() else "no commits"
 
 
 def perfil_ok(raiz):
     try:
         with open(os.path.join(raiz, PERFIL), encoding="utf-8") as f:
-            return bool(re.search(r"^# Perfil DevSquad AI\b", f.read(), re.MULTILINE))
+            return bool(re.search(r"^# (?:DevSquad AI Profile|Perfil DevSquad AI)\b", f.read(), re.MULTILINE))
     except (OSError, UnicodeDecodeError):
         return False
 
@@ -63,45 +63,45 @@ def tareas(raiz, track_id):
 
 def siguiente_paso(raiz, track):
     if not perfil_ok(raiz):
-        return "crear el perfil con la skill `iniciar-proyecto` (sin perfil las compuertas niegan todo)."
+        return "create the profile with the `iniciar-proyecto` skill (without a profile the gates deny everything)."
     faltan = [(f, a) for f, a in ENTREGABLES if not os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f))]
     if track is None:
-        return "delegar en `%s` (falta `%s`)." % (faltan[0][1], faltan[0][0]) if faltan else \
-               "definir un track nuevo con el BSA."
+        return "delegate to `%s` (`%s` is missing)." % (faltan[0][1], faltan[0][0]) if faltan else \
+               "define a new track with the BSA."
     estado = track["estado"]
     if estado == "borrador":
         if faltan:
-            return "delegar en `%s` (falta `%s`)." % (faltan[0][1], faltan[0][0])
+            return "delegate to `%s` (`%s` is missing)." % (faltan[0][1], faltan[0][0])
         try:
             if not E.tareas_del_plan(E.leer_plan(raiz, track["id"])[1]):
-                return "pedirle al `arquitecto` las tareas de `plan.md`."
+                return "ask the `arquitecto` for the tasks in `plan.md`."
         except E.ReglaError:
             pass
         sin = [o for o in E.APROBACIONES_PARA_LISTO if E.estado_aprobacion(raiz, track, o)[0] != "ok"]
         if sin:
-            return ("esperar la aprobación humana de %s (no la registres tú): %s." % (", ".join(sin), E.comoaprobar(sin[0])))
-        return "el track pasa a `listo` en cuanto se registre la última aprobación."
+            return ("wait for the human approval of %s (do not record it yourself): %s." % (", ".join(sin), E.comoaprobar(sin[0])))
+        return "the track moves to `listo` as soon as the last approval is recorded."
     if estado in ("en_progreso", "correcciones", "en_revision", "verificado"):
         motivo = E.motivo_no_cerrable(raiz, track)
         if motivo is None:
-            return "el track cumple los criterios y se cierra solo."
+            return "the track meets the criteria and closes by itself."
         if E.cumple_criterios_objetivos(raiz, track) and E.politica_de(track) == "humano":
-            return "el track cumple los criterios y espera la aprobación humana de cierre: %s." % E.comoaprobar("cierre")
+            return "the track meets the criteria and is waiting for the human closing approval: %s." % E.comoaprobar("cierre")
     return {
-        "listo": "delegar en `coder` (el hook pasa el track a `en_progreso`).",
-        "en_progreso": "continuar con el `coder` hasta completar las tareas.",
-        "correcciones": "continuar con el `coder` con las correcciones.",
-        "en_revision": "esperar la revisión.",
-        "verificado": "completar el cierre del track.",
-        "bloqueado": "resolver el bloqueo con la persona.",
-    }.get(estado, "revisar el estado.")
+        "listo": "delegate to `coder` (the hook moves the track to `en_progreso`).",
+        "en_progreso": "continue with the `coder` until the tasks are complete.",
+        "correcciones": "continue with the `coder` on the corrections.",
+        "en_revision": "wait for the review.",
+        "verificado": "complete the track closing.",
+        "bloqueado": "resolve the block with the person.",
+    }.get(estado, "review the state.")
 
 
 def generar(raiz, maximo=MAX_CARACTERES):
     raiz = os.path.abspath(raiz)
-    lineas = ["DevSquad AI · puntero de arranque (generado por script; el detalle está en las rutas de abajo)",
-              "Proyecto: %s · Carpeta de trabajo: %s" % (recortar(os.path.basename(raiz), 80), raiz),
-              "Perfil: %s" % ("ok (%s)" % PERFIL if perfil_ok(raiz) else "FALTA (%s)" % PERFIL)]
+    lineas = ["DevSquad AI · startup pointer (script-generated; the detail is in the paths below)",
+              "Project: %s · Working folder: %s" % (recortar(os.path.basename(raiz), 80), raiz),
+              "Profile: %s" % ("ok (%s)" % PERFIL if perfil_ok(raiz) else "MISSING (%s)" % PERFIL)]
     track, tid = None, None
     if os.path.exists(E.ruta_estado(raiz)):
         try:
@@ -109,36 +109,37 @@ def generar(raiz, maximo=MAX_CARACTERES):
             tid = estado.get("track_activo")
             track = E.cargar_track(raiz, tid) if tid else None
         except E.ReglaError as e:
-            lineas.append("Estado: ILEGIBLE (%s)" % recortar(e, 200))
+            lineas.append("State: UNREADABLE (%s)" % recortar(e, 200))
     else:
-        lineas.append("Estado: sin %s/%s todavía" % (E.DIR_ESTADO, E.ARCHIVO_ESTADO))
+        lineas.append("State: no %s/%s yet" % (E.DIR_ESTADO, E.ARCHIVO_ESTADO))
     if track:
         ts = tareas(raiz, tid)
         hechas = sum(1 for t in ts if t[1] == "x")
         sig = next((t for t in ts if t[1] != "x"), None)
-        lineas.append("Track activo: %s (%s) · %s · tareas %d/%d" % (tid, track["estado"], recortar(track.get("titulo", ""), 80),
+        lineas.append("Active track: %s (%s) · %s · tasks %d/%d" % (tid, track["estado"], recortar(track.get("titulo", ""), 80),
                                                                      hechas, len(ts)))
         ap = E.resumen_aprobaciones(raiz, track, estado)
-        lineas.append("Aprobaciones humanas: arquitectura %s · diseño %s · comandos de verificación %s · cierre %s · política de cierre: %s"
-                      % (ap["arquitectura"], ap["diseno"], ap["comandos"], ap["cierre"], E.politica_de(track)))
-        lineas.append("Siguiente tarea: %s" % ("%s \"%s\"" % (sig[0], recortar(sig[2], 120)) if sig else "—"))
-        lineas.append("Bloqueos: %s" % ("el track está bloqueado (antes: %s)" % (track.get("estado_previo") or "?")
-                                         if track["estado"] == "bloqueado" else "ninguno"))
-        lineas.append("Detalle del track: %s" % os.path.join(raiz, E.DIR_ESTADO, E.DIR_TRACKS, tid))
+        lineas.append("Human approvals: architecture %s · design %s · verification commands %s · closing %s · closing policy: %s"
+                      % (E.txt_aprobacion(ap["arquitectura"]), E.txt_aprobacion(ap["diseno"]), E.txt_aprobacion(ap["comandos"]),
+                         E.txt_aprobacion(ap["cierre"]), E.politica_de(track)))
+        lineas.append("Next task: %s" % ("%s \"%s\"" % (sig[0], recortar(sig[2], 120)) if sig else "—"))
+        lineas.append("Blockers: %s" % ("the track is blocked (before: %s)" % (track.get("estado_previo") or "?")
+                                         if track["estado"] == "bloqueado" else "none"))
+        lineas.append("Track detail: %s" % os.path.join(raiz, E.DIR_ESTADO, E.DIR_TRACKS, tid))
     else:
-        lineas.append("Track activo: ninguno")
-    lineas.append("Último commit: %s" % ultimo_commit(raiz))
+        lineas.append("Active track: none")
+    lineas.append("Last commit: %s" % ultimo_commit(raiz))
     c = M.conteos(raiz)
-    lineas.append("Memoria: %d decisiones, %d aprendizajes, %d tracks cerrados → índice (léelo con Read, sin Bash): %s"
+    lineas.append("Memory: %d decisions, %d learnings, %d closed tracks → index (read it with Read, no Bash): %s"
                   % (c["decisiones"], c["aprendizajes"], c["tracks_cerrados"], M.ruta_memoria(raiz, M.INDICE)))
-    lineas.append("Estado completo: %s" % E.ruta_estado(raiz))
-    lineas.append("Siguiente paso sugerido: %s" % siguiente_paso(raiz, track))
+    lineas.append("Full state: %s" % E.ruta_estado(raiz))
+    lineas.append("Suggested next step: %s" % siguiente_paso(raiz, track))
     texto = "\n".join(lineas)
     return texto if len(texto) <= maximo else texto[: maximo - 1] + "…"
 
 
 def main(argv=None):
-    p = argparse.ArgumentParser(prog="devsquad_puntero", description="Puntero de arranque de DevSquad AI.")
+    p = argparse.ArgumentParser(prog="devsquad_puntero", description="DevSquad AI startup pointer.")
     p.add_argument("--raiz")
     a = p.parse_args(argv)
     print(generar(E.raiz_proyecto(a.raiz)))

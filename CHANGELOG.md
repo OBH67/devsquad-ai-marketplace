@@ -1,5 +1,48 @@
 # Changelog
 
+> From 0.7.0 on, this file is written in English. The entries below it (0.6.1
+> and earlier) keep their original Spanish text.
+
+## [0.7.0] — 2026-10-21 — English (first version for English-speaking clients)
+
+DevSquad AI now works in English. The agents are told to write every file,
+record and memory entry in English, even if the person talks to them in
+another language.
+
+### Changed
+- The five agents and the twelve skills are rewritten in English (frontmatter
+  `description:` included, which is what Claude Code uses to choose them).
+  Each agent has a "Language" rule: English for everything it writes.
+- The messages of the scripts and hooks that the agent or the person reads are
+  in English: the gate denials, the startup pointer, the `devsquad-estado`
+  output and errors, the memory index, and the hook result sent to the model
+  ("HOOK RESULT").
+- The templates `spec.md` and `plan.md` and the example profile are in English
+  (`## Goal`, `## Acceptance criteria`, `## Tasks`, "DevSquad AI Profile").
+- README, plugin manifest and marketplace descriptions are in English.
+
+### Kept as they are (identifiers, not prose)
+- Agent names (`orquestador`, `bsa`, `arquitecto`, `disenador`, `coder`), the
+  commands (`/devsquad-ai:aprobar`, `/devsquad-ai:cancelar`, `devsquad-estado`
+  and its subcommands), track states (`borrador`, `listo`, `en_progreso`,
+  `en_revision`, `correcciones`, `verificado`, `bloqueado`, `cerrado`,
+  `cancelado`), approval subjects (`arquitectura`, `diseno`, `comandos`,
+  `cierre`), closing policies (`humano`, `automatico`), the file names under
+  `.devsquad/` and the JSON keys. Renaming them would break existing projects,
+  the Factory (its approval subjects and its readers of `estado.json`) and the
+  tests, and it is not needed for the agents to work in English.
+- Memory record headers (`tipo`, `fecha`, `titulo`, `etiquetas`, `track`).
+- Code comments and docstrings of the scripts (developer-facing).
+
+### Compatible with existing projects
+- A profile written with the Spanish labels still works: `# Perfil DevSquad AI`,
+  `**Archivos protegidos**`, "Comandos de verificación" and
+  `**Política de cierre**: humano` are understood next to the English ones.
+- Messages changed language, so anything that matches on the old Spanish text
+  must be updated. The Factory matched `No hay .devsquad/estado.json`; the new
+  text is `There is no .devsquad/estado.json`.
+- Tests: 188 pass.
+
 ## [0.6.1] — 2026-10-15 — Memoria de la Factory (Fase 2)
 
 ### Agregado

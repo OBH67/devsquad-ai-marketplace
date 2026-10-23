@@ -1,64 +1,67 @@
 ---
-description: Recuperar la memoria del proyecto (decisiones, aprendizajes y tracks anteriores) sin cargarla toda — se lee el índice y solo el registro que importa; en la Factory, también la de proyectos anteriores con mcp__factory__buscar_memoria. Usar cuando haga falta recordar qué se decidió sobre algo, si ya se resolvió un problema parecido, o qué pasó en un track anterior. No sirve para saber en qué se quedó el trabajo (eso lo dicen el puntero de arranque y `.devsquad/estado.json`).
+description: Retrieve the project's memory (earlier decisions, learnings and tracks) without loading all of it — read the index and only the record that matters; in the Factory, also the memory of previous projects with mcp__factory__buscar_memoria. Use when you need to remember what was decided about something, whether a similar problem was already solved, or what happened in an earlier track. It is not for finding out where the work left off (the startup pointer and `.devsquad/estado.json` say that).
 ---
 
-# Buscar en la memoria del proyecto (nivel 1: índice)
+# Search the project's memory (level 1: index)
 
-Dos preguntas distintas, dos herramientas distintas:
+Two different questions, two different tools:
 
-- **«¿En qué me quedé?»** es una consulta exacta: respóndela con el puntero de
-  arranque o leyendo `.devsquad/estado.json` y el `plan.md` del track activo.
-  No la busques en la memoria: un registro viejo podría contradecirla.
-- **«¿Qué decidimos sobre X?» / «¿ya resolvimos algo parecido?»**: usa esta
-  skill.
+- **"Where did I leave off?"** is an exact query: answer it with the startup
+  pointer or by reading `.devsquad/estado.json` and the active track's
+  `plan.md`. Do not look for it in memory: an old record could contradict it.
+- **"What did we decide about X?" / "did we already solve something
+  similar?"**: use this skill.
 
-## Cómo
+## How
 
-1. Lee el índice con Read: `.devsquad/memoria/indice.md` (la ruta absoluta
-   viene en el puntero de arranque). Lo genera un script; no lo edites. Trae
-   una línea por track, decisión y aprendizaje, con fecha, título, etiquetas y
-   la ruta del archivo.
-2. Elige por el título y las etiquetas los registros que puedan responder, y
-   lee **solo esos** con Read. Nunca leas toda la carpeta de memoria.
-3. Cuando cites algo de la memoria, di de qué registro viene y su fecha: puede
-   estar desactualizado frente al estado actual del proyecto.
-4. Si el índice no tiene nada relacionado, dilo: no inventes un recuerdo.
+1. Read the index with Read: `.devsquad/memoria/indice.md` (the absolute path
+   comes in the startup pointer). A script generates it; do not edit it. It
+   has one line per track, decision and learning, with date, title, tags and
+   the file's path.
+2. Choose, by title and tags, the records that could answer, and read
+   **only those** with Read. Never read the whole memory folder.
+3. When you cite something from memory, say which record it comes from and its
+   date: it may be out of date compared to the project's current state.
+4. If the index has nothing related, say so: do not invent a memory.
 
-No tienes `Bash`: no uses búsquedas de texto. En una terminal normal, la
-búsqueda de texto completo y por significado no están disponibles; en la
-Factory sí (abajo).
+You do not have `Bash`: do not use text searches. In a normal terminal, full
+text and meaning-based search are not available; in the Factory they are
+(below).
 
-## En la Factory: `mcp__factory__buscar_memoria` (niveles 2 y 3)
+## In the Factory: `mcp__factory__buscar_memoria` (levels 2 and 3)
 
-Si tienes la herramienta `mcp__factory__buscar_memoria`, estás en la AI
-Software Factory y la memoria es más grande que este proyecto: decisiones
-registradas, ADRs y aprendizajes de **proyectos anteriores**, con búsqueda por
-palabras y por significado.
+If you have the `mcp__factory__buscar_memoria` tool, you are in the AI
+Software Factory and the memory is larger than this project: recorded
+decisions, ADRs and learnings from **previous projects**, with search by
+words and by meaning.
 
-1. Llámala con `consulta` en lenguaje natural («cómo cobramos los pedidos en
-   restaurantes», «por qué se eligió Postgres»). Opcional: `tipo` (decision,
-   adr, learning, pattern, document, preference) y `limite`.
-2. Cada resultado trae su origen (p. ej. `DEC-0003 · taqueria-001` o la ruta del
-   archivo), fecha, confianza y, si se conoce, cómo salió. Cita ese origen.
-3. Es referencia, no orden: si el contexto de este proyecto es distinto, dilo
-   y decide con criterio. Lo marcado OBSOLETO no se reutiliza.
-4. Para «¿en qué me quedé?» sigue valiendo el puntero de arranque, no la
-   memoria.
+1. Call it with `consulta` in natural language ("how we charge for orders in
+   restaurants", "why Postgres was chosen"). Optional: `tipo` (decision, adr,
+   learning, pattern, document, preference) and `limite`.
+2. Each result carries its origin (e.g. `DEC-0003 · taqueria-001` or the
+   file's path), date, confidence and, if known, how it turned out. Cite
+   that origin.
+3. It is a reference, not an order: if this project's context is different,
+   say so and decide with judgment. What is marked OBSOLETE is not reused.
+4. For "where did I leave off?" the startup pointer still applies, not the
+   memory.
 
-## Cómo se guarda un registro (para quien escribe memoria)
+## How a record is stored (for whoever writes memory)
 
-Un archivo por registro en `.devsquad/memoria/decisiones/` o
-`.devsquad/memoria/aprendizajes/`, con un encabezado:
+One file per record in `.devsquad/memoria/decisiones/` or
+`.devsquad/memoria/aprendizajes/`, with a header. Write it in English. The
+header keys are part of the format and stay as they are:
 
 ```
 ---
 tipo: decision            (decision | aprendizaje)
 fecha: 2026-10-04
-titulo: Usar SQLite al inicio
-etiquetas: base-de-datos, costo
-track: 001-inicial        (opcional)
+titulo: Use SQLite at the start
+etiquetas: database, cost
+track: 001-inicial        (optional)
 ---
-Qué se decidió, por qué, y qué alternativas se descartaron.
+What was decided, why, and which alternatives were discarded.
 ```
 
-El índice se regenera solo al empezar la sesión y cuando termina un agente.
+The index is regenerated by itself when the session starts and when an agent
+finishes.

@@ -152,7 +152,7 @@ class PruebasPerfil(Base):
 
     def test_el_mensaje_dice_el_paso_siguiente(self):
         r = self.pre("Bash", {"command": "ls"}, esperado=2)
-        self.assertIn("Siguiente paso", r.stderr)
+        self.assertIn("Next step", r.stderr)
 
 
 class PruebasSecretosYProtegidos(Base):
@@ -163,7 +163,7 @@ class PruebasSecretosYProtegidos(Base):
 
     def test_env_se_niega_pero_el_ejemplo_no(self):
         r = self.escribe(".env", "A=1", esperado=2)
-        self.assertIn("secretos", r.stderr)
+        self.assertIn("Secret files", r.stderr)
         self.escribe("config/.env.local", "A=1", esperado=2)
         self.escribe(".env.example", "A=")
 
@@ -177,8 +177,8 @@ class PruebasSecretosYProtegidos(Base):
 
     def test_protegidos_por_directorio_y_por_patron(self):
         r = self.escribe("src/runtime/motor.py", esperado=2)
-        self.assertIn("protegido", r.stderr)
-        self.assertIn("pregúntale", r.stderr)
+        self.assertIn("protected", r.stderr)
+        self.assertIn("ask the person", r.stderr)
         self.escribe("config/app.yaml", esperado=2)
         self.escribe("src/otro/motor.py")
         self.escribe("config/app.json")
@@ -277,7 +277,7 @@ class PruebasSubagentStopPlaneacion(Base):
     def test_requerimientos_sin_titulo_usa_iteracion(self):
         self.escribir(".devsquad/requerimientos.md", "sin encabezado\n")
         self.stop("bsa")
-        self.assertEqual(self.leer_json(".devsquad/estado.json")["track_activo"], "001-iteracion")
+        self.assertEqual(self.leer_json(".devsquad/estado.json")["track_activo"], "001-iteration")
 
     def test_bsa_sin_entregable_no_crea_nada(self):
         r = self.stop("bsa")
@@ -295,11 +295,11 @@ class PruebasSubagentStopPlaneacion(Base):
         self.estado("crear", "inicial")
         self.docs("requerimientos.md", "arquitectura.md", "diseno.md")
         r = self.stop("disenador")
-        self.assertIn("sin tareas", json.loads(r.stdout)["systemMessage"])
+        self.assertIn("without tasks", json.loads(r.stdout)["systemMessage"])
         self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "borrador")
         self.escribir(".devsquad/tracks/001-inicial/plan.md", "- [ ] 1 Algo\n")
         r = self.stop("arquitecto")
-        self.assertIn("aprobación humana", json.loads(r.stdout)["systemMessage"])  # falta que la persona apruebe
+        self.assertIn("human approval", json.loads(r.stdout)["systemMessage"])  # falta que la persona apruebe
         self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "borrador")
         self.aprobar_planeacion()
         self.stop("arquitecto")
@@ -338,18 +338,18 @@ class PruebasSubagentStopCoder(Base):
     def test_sin_comandos_declarados_avisa_y_no_bloquea(self):
         self.perfil(PERFIL.split("## Comandos")[0] + "_Última actualización: hoy_\n")
         r = self.stop()
-        self.assertIn("no declara comandos de verificación", json.loads(r.stdout)["systemMessage"])
+        self.assertIn("declares no verification commands", json.loads(r.stdout)["systemMessage"])
 
     def test_comandos_na_cuentan_como_no_declarados(self):
         self.perfil(PERFIL.replace("- Lint: `true`\n- Pruebas: `true`", "N/A"))
 
-        self.assertIn("no declara", json.loads(self.stop().stdout)["systemMessage"])
+        self.assertIn("declares no", json.loads(self.stop().stdout)["systemMessage"])
 
     def test_verificacion_en_rojo_bloquea_con_la_salida(self):
         self.con_comandos("echo ERROR-DE-LINT-XYZ; exit 1")
         r = self.stop(esperado=2)
         self.assertIn("ERROR-DE-LINT-XYZ", r.stderr)
-        self.assertIn("Siguiente paso", r.stderr)
+        self.assertIn("Next step", r.stderr)
         self.assertEqual(self.contador(), 1)
 
     def test_verificacion_en_verde_reinicia_el_contador(self):
@@ -378,7 +378,7 @@ class PruebasSubagentStopCoder(Base):
         modulo.TIMEOUT_VERIFICACION = 1
         fallos = modulo.ejecutar_verificacion(self.p, [("lento", "sleep 5")])
         self.assertEqual(len(fallos), 1)
-        self.assertIn("tiempo", fallos[0][2])
+        self.assertIn("Timed out", fallos[0][2])
 
     def test_comandos_sin_aprobar_no_se_ejecutan_y_el_track_no_avanza(self):
         self.con_comandos("echo SE-EJECUTO > ejecutado.txt", aprobar=False)
@@ -386,7 +386,7 @@ class PruebasSubagentStopCoder(Base):
             self.estado("tarea", t, "hecha", "--commit", "abcdef1")
         r = self.stop()  # no bloquea: el coder no puede arreglarlo
         msg = json.loads(r.stdout)["systemMessage"]
-        self.assertIn("No se ejecutaron", msg)
+        self.assertIn("were not run", msg)
         self.assertIn("/devsquad-ai:aprobar comandos", msg)
         self.assertFalse(os.path.exists(self.ruta("ejecutado.txt")))
         self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "en_progreso")
@@ -397,7 +397,7 @@ class PruebasSubagentStopCoder(Base):
         for t in ("1", "2"):
             self.estado("tarea", t, "hecha", "--commit", "abcdef1")
         msg = json.loads(self.stop().stdout)["systemMessage"]
-        self.assertIn("cambiaron", msg)
+        self.assertIn("changed", msg)
         self.assertFalse(os.path.exists(self.ruta("ejecutado.txt")))
         self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "en_progreso")
         self.aprobar_comandos()  # la persona los revisa y los aprueba
@@ -407,7 +407,7 @@ class PruebasSubagentStopCoder(Base):
 
     def test_con_tareas_abiertas_el_track_no_avanza(self):
         r = self.stop()
-        self.assertIn("faltan tareas", json.loads(r.stdout)["systemMessage"])
+        self.assertIn("tasks still to complete", json.loads(r.stdout)["systemMessage"])
         self.assertEqual(self.leer_json(".devsquad/tracks/001-inicial/track.json")["estado"], "en_progreso")
 
     def test_con_todas_las_tareas_pasa_a_en_revision(self):
@@ -459,7 +459,7 @@ class PruebasResultadoDelCoder(Base):
         self.escribir(".env", "TOKEN=1\n")  # equivale a `echo TOKEN=1 > .env`
         r = self.stop(esperado=2)
         self.assertIn(".env", r.stderr)
-        self.assertIn("secretos", r.stderr)
+        self.assertIn("secrets file", r.stderr)
         os.remove(self.ruta(".env"))
         self.stop()
 
@@ -540,7 +540,7 @@ class PruebasResultadoDelCoder(Base):
     def test_sin_git_avisa_y_no_bloquea(self):
         shutil.rmtree(self.ruta(".git"))
         r = self.stop()
-        self.assertIn("no es un repositorio Git", json.loads(r.stdout)["systemMessage"])
+        self.assertIn("not a Git repository", json.loads(r.stdout)["systemMessage"])
 
     def test_sin_comandos_las_violaciones_bloquean_igual(self):
         self.perfil(PERFIL.split("## Comandos")[0] + "_Última actualización: hoy_\n")
@@ -594,7 +594,7 @@ class PruebasStop(Base):
                         "--allow-empty", "-m", "c"], check=True)
         r = self.stop()
         msg = json.loads(r.stdout)["systemMessage"]
-        self.assertIn("espera la aprobación de cierre", msg)
+        self.assertIn("waiting for the person's closing approval", msg)
         self.assertIn("/devsquad-ai:aprobar cierre", msg)
         self.assertIn("ask_human", msg)
 
@@ -614,7 +614,7 @@ class PruebasStop(Base):
                         "--allow-empty", "-m", "c"], check=True)
         self.estado("aprobar", "cierre", "--fuente", "terminal")
         msg = json.loads(self.stop().stdout)["systemMessage"]
-        self.assertIn("ya cumple los criterios de cierre", msg)
+        self.assertIn("already meets the closing criteria", msg)
 
     def test_nunca_bloquea_el_stop(self):
         self.stop()  # track en_progreso con tareas abiertas: exit 0

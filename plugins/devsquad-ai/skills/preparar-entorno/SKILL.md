@@ -1,17 +1,17 @@
 ---
-description: Verifica que las herramientas necesarias (Node.js, npm, git) estén instaladas antes de escribir la primera línea de código de un proyecto DevSquad AI, y guía a la persona para instalarlas — incluyendo el aviso de pedir permiso a TI si está en una computadora de trabajo con restricciones. Usar siempre antes de que el coder empiece a implementar, nunca asumir que ya están instaladas.
+description: Verifies that the necessary tools (Node.js, npm, git) are installed before writing the first line of code of a DevSquad AI project, and guides the person to install them — including the notice to ask IT for permission if they are on a work computer with restrictions. Always use before the coder starts implementing; never assume they are already installed.
 ---
 
-# Preparar el entorno local
+# Prepare the local environment
 
-No asumas que la persona ya tiene las herramientas necesarias instaladas.
-Esto ya causó fricción real en un proyecto DevSquad AI: se asumió desde el
-inicio que ya existían las herramientas de Node para correr `npm`, y nunca
-se verificó ni se avisó con anticipación.
+Do not assume the person already has the necessary tools installed. This
+already caused real friction in a DevSquad AI project: it was assumed from
+the start that the Node tools to run `npm` already existed, and it was never
+verified nor warned about in advance.
 
-## Pasos
+## Steps
 
-1. **Verifica qué hay instalado**, usando Bash:
+1. **Check what is installed**, using Bash:
 
 ```
 node -v
@@ -19,38 +19,37 @@ npm -v
 git --version
 ```
 
-Ajusta la lista según lo que requiera el stack elegido en
-`.devsquad/arquitectura.md` (por ejemplo, si se eligió Python en vez de
-Node, verifica `python3 --version` en su lugar).
+Adjust the list to what the stack chosen in `.devsquad/arquitectura.md`
+requires (for example, if Python was chosen instead of Node, check
+`python3 --version` instead).
 
-2. **Si todo está instalado y en una versión razonable**, dilo brevemente y
-continúa — no hace falta detenerte más en esto.
+2. **If everything is installed and in a reasonable version**, say so briefly
+and continue — there is no need to dwell on this any longer.
 
-3. **Si falta algo**, explica en lenguaje simple qué es y por qué se
-necesita (ej. "Node es el programa que hace posible correr el código de
-tu app en tu computadora — sin él no puedo mostrarte cómo se ve").
-Dale el paso concreto para instalarlo (sitio oficial, no un tutorial
-improvisado):
-- Node.js + npm → nodejs.org (descargar la versión LTS)
+3. **If something is missing**, explain in simple language what it is and why
+it is needed (e.g. "Node is the program that makes it possible to run your
+app's code on your computer — without it I can't show you how it looks").
+Give them the concrete step to install it (the official site, not an
+improvised tutorial):
+- Node.js + npm → nodejs.org (download the LTS version)
 - git → git-scm.com
 
-4. **Advierte explícitamente sobre computadoras de trabajo restringidas**,
-siempre, sin esperar a que falle una instalación:
+4. **Explicitly warn about restricted work computers**, always, without
+waiting for an installation to fail:
 
-> "Si estás usando una computadora de tu trabajo, es posible que no
-> tengas permiso para instalar programas nuevos. Antes de intentar
-> instalar esto, pregúntale a tu equipo de TI (Tecnologías de la
-> Información / IT) si pueden instalarlo por ti o autorizarte para
-> hacerlo. Así evitamos que te encuentres con un error de 'permiso
-> denegado' a mitad del proceso."
+> "If you're using a computer from your work, you may not have permission to
+> install new programs. Before trying to install this, ask your IT team
+> (Information Technology) whether they can install it for you or authorize
+> you to do it. That way we avoid you running into a 'permission denied'
+> error halfway through."
 
-5. **No continúes a escribir código hasta que la persona confirme que las
-herramientas están listas.** Si no puede instalar algo por
-restricciones de su empresa, repórtalo al Orquestador — puede que el
-proyecto necesite pausar ahí hasta que TI autorice, y la persona debe
-saber que ese es el motivo, no un error del sistema.
+5. **Do not continue to write code until the person confirms that the tools
+are ready.** If they cannot install something because of their company's
+restrictions, report it to the Orchestrator — the project may need to pause
+there until IT authorizes it, and the person must know that this is the
+reason, not a system error.
 
-## Con alguien no técnico
+## With someone non-technical
 
-No le pidas que "corra comandos" sin explicarle primero, en una frase, qué
-va a pasar y por qué es seguro hacerlo.
+Do not ask them to "run commands" without first explaining, in one sentence,
+what is going to happen and why it is safe to do it.

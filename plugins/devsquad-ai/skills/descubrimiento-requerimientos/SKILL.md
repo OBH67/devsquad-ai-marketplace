@@ -1,50 +1,50 @@
 ---
-description: Buenas prácticas para levantar requerimientos e historias de usuario de calidad (criterios INVEST, priorización estilo MoSCoW, banco de preguntas de descubrimiento) en proyectos DevSquad AI. Usar siempre al traducir una idea en requerimientos, antes de pasar el trabajo al arquitecto.
+description: Good practices for gathering quality requirements and user stories (INVEST criteria, MoSCoW-style prioritization, a bank of discovery questions) in DevSquad AI projects. Always use when turning an idea into requirements, before handing the work to the architect.
 ---
 
-# Descubrimiento de requerimientos de calidad
+# Quality requirements discovery
 
-## Criterios de una buena historia de usuario (INVEST)
+## Criteria of a good user story (INVEST)
 
-Usa esto como checklist interno — no le muestres estas siglas a la
-persona, tradúcelas a preguntas naturales:
+Use this as an internal checklist — do not show these initials to the person,
+translate them into natural questions:
 
-- **Independiente**: ¿esta funcionalidad se puede construir sin depender
-  de que otra esté lista primero? Si no, dilo explícitamente.
-- **Negociable**: no la redactes como una especificación rígida; deja
-  espacio para que el arquitecto decida el cómo.
-- **Valiosa**: ¿qué gana la persona con esto? Si no puedes contestar en una
-  frase, probablemente falta contexto — pregunta más.
-- **Estimable**: debe quedar clara qué tan grande es (chica/mediana/grande
-  a ojo, no en horas).
-- **Small (pequeña)**: si una historia suena a "proyecto completo", pártela
-  en varias.
-- **Testable**: debe quedar claro cómo alguien sabría que ya funciona.
+- **Independent**: can this functionality be built without depending on
+  another one being ready first? If not, say so explicitly.
+- **Negotiable**: do not write it as a rigid specification; leave room for
+  the architect to decide the how.
+- **Valuable**: what does the person gain from this? If you cannot answer in
+  one sentence, context is probably missing — ask more.
+- **Estimable**: it must be clear how big it is (small/medium/large by eye,
+  not in hours).
+- **Small**: if a story sounds like a "complete project", split it into
+  several.
+- **Testable**: it must be clear how someone would know it already works.
 
-## Priorización (v1 vs. futuro)
+## Prioritization (v1 vs. future)
 
-Clasifica cada historia en una de estas categorías, y sé explícito sobre
-por qué algo no es v1:
-- **Debe estar en v1**: sin esto, la app no cumple su propósito mínimo.
-- **Debería estar, pero puede esperar**: mejora la experiencia, no es
-  crítico para el primer uso.
-- **Podría estar en el futuro**: una idea válida, pero lejana.
-- **No por ahora**: fuera de alcance por decisión, no por olvido.
+Classify each story into one of these categories, and be explicit about why
+something is not v1:
+- **Must be in v1**: without this, the app does not meet its minimum purpose.
+- **Should be there, but can wait**: improves the experience, not critical
+  for the first use.
+- **Could be in the future**: a valid idea, but distant.
+- **Not for now**: out of scope by decision, not by oversight.
 
-## Banco de preguntas de descubrimiento
+## Bank of discovery questions
 
-Úsalas como punto de partida, adaptadas a cada idea, una a la vez:
-- ¿Quién va a usar esto? ¿Alguien más además de ti?
-- ¿Qué es lo mínimo que tiene que hacer para ya serte útil?
-- ¿Cómo resuelves esto hoy, sin la app? (revela el verdadero problema)
-- ¿Hay algo parecido que ya conozcas o uses, como referencia?
-- ¿Qué pasaría si esto no existiera — qué tan grave sería?
-- ¿Hay restricciones que ya sepas? (tiempo, presupuesto, quién más está
-  involucrado)
+Use them as a starting point, adapted to each idea, one at a time:
+- Who is going to use this? Anyone else besides you?
+- What is the minimum it has to do to already be useful to you?
+- How do you solve this today, without the app? (it reveals the real problem)
+- Is there something similar you already know or use, as a reference?
+- What would happen if this didn't exist — how bad would it be?
+- Are there constraints you already know about? (time, budget, who else is
+  involved)
 
-## Definición de "terminado" para el entregable
+## Definition of "done" for the deliverable
 
-`.devsquad/requerimientos.md` no está completo si:
-- Alguna historia no tiene claro el "para qué" (el beneficio).
-- No hay al menos una separación explícita entre v1 y futuro.
-- Quedó una ambigüedad sin marcar como pregunta abierta.
+`.devsquad/requerimientos.md` is not complete if:
+- Any story does not make the "what for" (the benefit) clear.
+- There is not at least one explicit separation between v1 and future.
+- An ambiguity was left without being marked as an open question.

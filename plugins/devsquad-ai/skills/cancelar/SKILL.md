@@ -1,19 +1,21 @@
 ---
-description: "Cancelar el track abierto, con motivo. Solo la persona lo invoca (por ejemplo /devsquad-ai:cancelar cambió el alcance); el modelo no puede."
+description: "Cancel the open track, with a reason. Only the person invokes it (for example /devsquad-ai:cancelar the scope changed); the model cannot."
 disable-model-invocation: true
-argument-hint: "motivo de la cancelación"
+argument-hint: "reason for the cancellation"
 ---
 
-# Cancelar el track (decisión de la persona)
+# Cancel the track (the person's decision)
 
-La persona escribió este comando. **La cancelación no la registras tú**: un hook de
-DevSquad AI la procesó con código antes de que este mensaje llegara a ti, y su
-resultado viene en el contexto como «RESULTADO DEL HOOK».
+The person typed this command. **You do not record the cancellation**: a
+DevSquad AI hook processed it with code before this message reached you, and
+its result is in the context as "HOOK RESULT".
 
-Argumentos recibidos (el motivo): $ARGUMENTS
+Arguments received (the reason): $ARGUMENTS
 
-- Si el resultado dice que el track quedó cancelado, confírmaselo a la persona: el
-  historial se conserva, el lugar único queda libre y se puede abrir un track nuevo.
-- Si dice que no se canceló (por ejemplo, falta el motivo), dile por qué.
-- Si no hay resultado del hook, dile que **no quedó cancelado** y que puede ejecutar
-  ella misma `devsquad-estado cancelar --motivo "..." --fuente terminal`.
+- If the result says the track was cancelled, confirm it to the person: the
+  history is kept, the single slot is free and a new track can be opened.
+- If it says it was not cancelled (for example, the reason is missing), tell
+  them why.
+- If there is no hook result, tell them that it was **not cancelled** and
+  that they can run, themselves,
+  `devsquad-estado cancelar --motivo "..." --fuente terminal`.

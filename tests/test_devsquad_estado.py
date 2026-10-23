@@ -114,7 +114,7 @@ class PruebasEsquema(Base):
         estado["schema_version"] = 99
         self.escribir(("estado.json",), json.dumps(estado))
         r = self.ejecutar("estado", esperado=1)
-        self.assertIn("actualiza el plugin", r.stderr)
+        self.assertIn("update the DevSquad AI plugin", r.stderr)
 
     def test_version_mas_vieja_pide_migrar(self):
         self.ejecutar("init")
@@ -127,13 +127,13 @@ class PruebasEsquema(Base):
     def test_migrar_en_version_vigente_no_hace_nada(self):
         self.ejecutar("init")
         r = self.ejecutar("migrar")
-        self.assertIn("ya está", r.stdout)
+        self.assertIn("already at version", r.stdout)
 
     def test_json_corrupto_da_mensaje_claro(self):
         self.ejecutar("init")
         self.escribir(("estado.json",), "{no es json")
         r = self.ejecutar("estado", esperado=1)
-        self.assertIn("no es JSON válido", r.stderr)
+        self.assertIn("is not valid JSON", r.stderr)
 
 
 class PruebasTracks(Base):
@@ -151,7 +151,7 @@ class PruebasTracks(Base):
         self.ejecutar("crear", "uno")
         r = self.ejecutar("crear", "dos", esperado=1)
         self.assertIn("001-uno", r.stderr)
-        self.assertIn("cerrarlo", r.stderr)
+        self.assertIn("until it is closed", r.stderr)
         self.assertFalse(os.path.exists(self.ruta("tracks", "002-dos")))
 
     def test_slug_invalido(self):
@@ -162,14 +162,14 @@ class PruebasTracks(Base):
         self.ejecutar("init")
         self.ejecutar("crear", "uno")
         r = self.ejecutar("transicion", "listo", esperado=1)  # sin escribir tareas reales
-        self.assertIn("sin tareas", r.stderr)
+        self.assertIn("without tasks", r.stderr)
 
     def test_listo_exige_tareas(self):
         self.ejecutar("init")
         self.ejecutar("crear", "uno")
         self.escribir(("tracks", "001-uno", "plan.md"), "# Plan sin tareas\n")
         r = self.ejecutar("transicion", "listo", esperado=1)
-        self.assertIn("sin tareas", r.stderr)
+        self.assertIn("without tasks", r.stderr)
 
     def test_transicion_no_permitida_lista_las_permitidas(self):
         self.ejecutar("init")
@@ -181,7 +181,7 @@ class PruebasTracks(Base):
     def test_revision_exige_tareas_completas(self):
         self.track_listo_en_progreso()
         r = self.ejecutar("transicion", "en_revision", esperado=1)
-        self.assertIn("faltan tareas", r.stderr)
+        self.assertIn("tasks still to complete", r.stderr)
 
     def test_bloquear_y_desbloquear_vuelve_al_estado_previo(self):
         self.track_listo_en_progreso()
@@ -214,7 +214,7 @@ class PruebasTareasYCierre(Base):
         self.repo_con_commit()
         self.track_listo_en_progreso()
         r = self.ejecutar("tarea", "1", "hecha", "--commit", "deadbeef", esperado=1)
-        self.assertIn("no existe", r.stderr)
+        self.assertIn("does not exist", r.stderr)
 
     def test_tarea_inexistente(self):
         self.track_listo_en_progreso()
@@ -232,7 +232,7 @@ class PruebasTareasYCierre(Base):
         self.track_listo_en_progreso()
         self.ejecutar("tarea", "1", "hecha", "--commit", "abcdef1")
         r = self.ejecutar("cerrar", esperado=1)
-        self.assertIn("faltan tareas", r.stderr)
+        self.assertIn("tasks still to complete", r.stderr)
         self.assertIn("2", r.stderr)
         self.assertEqual(self.json("estado.json")["track_activo"], "001-autenticacion")
 
@@ -251,7 +251,7 @@ class PruebasTareasYCierre(Base):
         self.track_listo_en_progreso()
         self.escribir(("tracks", "001-autenticacion", "plan.md"), "# vacío\n")
         r = self.ejecutar("cerrar", esperado=1)
-        self.assertIn("no tiene tareas", r.stderr)
+        self.assertIn("has no tasks", r.stderr)
 
     def test_cierre_desde_borrador_se_niega(self):
         self.ejecutar("init")
@@ -312,13 +312,13 @@ class PruebasValidarYEstado(Base):
                                   "estado": "borrador", "estado_previo": None}))
         self.escribir(("tracks", "002-intruso", "plan.md"), "- [ ] 1 x\n")
         r = self.ejecutar("validar", esperado=1)
-        self.assertIn("solo se permite uno", r.stderr)
+        self.assertIn("only one is allowed", r.stderr)
 
     def test_validar_detecta_tarea_hecha_sin_commit(self):
         self.track_listo_en_progreso()
         self.escribir(("tracks", "001-autenticacion", "plan.md"), "- [x] 1 editada a mano\n")
         r = self.ejecutar("validar", esperado=1)
-        self.assertIn("sin commit", r.stderr)
+        self.assertIn("without a recorded commit", r.stderr)
 
     def test_estado_json_resume_el_track_activo(self):
         self.track_listo_en_progreso()
@@ -332,12 +332,12 @@ class PruebasValidarYEstado(Base):
         with open(os.path.join(self.proyecto, ".gitignore"), "w") as f:
             f.write(".devsquad/\n")
         r = self.ejecutar("init")
-        self.assertIn("ignorando .devsquad", r.stderr)
+        self.assertIn("ignoring .devsquad", r.stderr)
 
     def test_no_advierte_si_se_versiona(self):
         self.repo_con_commit()
         r = self.ejecutar("init")
-        self.assertNotIn("ignorando", r.stderr)
+        self.assertNotIn("ignoring", r.stderr)
 
 
 class PruebasLanzador(unittest.TestCase):

@@ -1,72 +1,69 @@
 ---
-description: Estándares técnicos de frontend para DevSquad AI — accesibilidad (WCAG), diseño responsivo, sistemas de diseño y Atomic Design, jerarquía visual, feedback de interacción, rendimiento, y leyes de UX (Hick, Fitts). Usar siempre que el Diseñador defina el sistema de diseño o el Coder implemente interfaces.
+description: Frontend technical standards for DevSquad AI — accessibility (WCAG), responsive design, design systems and Atomic Design, visual hierarchy, interaction feedback, performance, and UX laws (Hick, Fitts). Always use when the Designer defines the design system or the Coder implements interfaces.
 ---
 
-# Estándares de frontend (DevSquad AI)
+# Frontend standards (DevSquad AI)
 
-## Antes de implementar o diseñar interfaz
+## Before implementing or designing an interface
 
-Consulta (con WebSearch si hace falta) la documentación oficial vigente del
-framework de frontend elegido (React, Next.js, Angular, u otro) y de
-cualquier librería de UI que se use — las convenciones y APIs cambian entre
-versiones mayores; no asumas que lo que sabes de memoria sigue vigente.
+Consult (with WebSearch if needed) the current official documentation of the
+chosen frontend framework (React, Next.js, Angular, or another) and of any UI
+library in use — conventions and APIs change between major versions; do not
+assume that what you know from memory is still current.
 
-## Accesibilidad (WCAG) — no negociable
+## Accessibility (WCAG) — non-negotiable
 
-- **HTML semántico**: usa las etiquetas que corresponden a su función
-  (`button` para acciones, `nav` para navegación, encabezados en orden
-  jerárquico), no `div` genéricos con JavaScript encima.
-- **Roles y atributos ARIA** donde el HTML semántico no baste (ej.
-  componentes custom tipo modal, tabs, dropdown).
-- **Navegación completa por teclado**: todo elemento clickeable debe ser
-  alcanzable y operable con Tab/Enter/Espacio, con foco visible en todo
-  momento.
-- **Contraste mínimo 4.5:1** — ya definido en la skill `diseno-ui`; esta
-  skill lo hereda, no lo repite.
+- **Semantic HTML**: use the tags that match their function (`button` for
+  actions, `nav` for navigation, headings in hierarchical order), not generic
+  `div`s with JavaScript on top.
+- **ARIA roles and attributes** where semantic HTML is not enough (e.g.
+  custom components such as modal, tabs, dropdown).
+- **Full keyboard navigation**: every clickable element must be reachable and
+  operable with Tab/Enter/Space, with visible focus at all times.
+- **Minimum contrast 4.5:1** — already defined in the `diseno-ui` skill; this
+  skill inherits it, it does not repeat it.
 
-## Diseño responsivo
+## Responsive design
 
-- Define breakpoints estándar (móvil, tablet, escritorio) y verifica que el
-  layout no se rompa en ninguno — no solo que se vea bien en la pantalla
-  donde se diseñó o implementó.
+- Define standard breakpoints (mobile, tablet, desktop) and verify that the
+  layout does not break at any of them — not only that it looks good on the
+  screen where it was designed or implemented.
 
-## Sistemas de diseño y Atomic Design
+## Design systems and Atomic Design
 
-- Organiza los componentes de UI en niveles reutilizables (átomos: botón,
-  input; moléculas: campo con etiqueta y error; organismos: formulario
-  completo) en vez de duplicar estilos y estructura pantalla por pantalla.
-  Esto reduce inconsistencia y facilita mantener en un solo lugar la
-  paleta y tipografía que definió el Diseñador.
+- Organize the UI components in reusable levels (atoms: button, input;
+  molecules: a field with label and error; organisms: a complete form)
+  instead of duplicating styles and structure screen by screen. This reduces
+  inconsistency and makes it easy to keep the palette and typography the
+  Designer defined in a single place.
 
-## Jerarquía visual y feedback
+## Visual hierarchy and feedback
 
-- Guía la atención con contraste, tamaño y espaciado (padding/márgenes) —
-  no todo en la pantalla puede pesar lo mismo.
-- Da retroalimentación inmediata a cualquier interacción: estados de
-  carga, éxito y error visibles, nunca un botón que "no hace nada" mientras
-  procesa.
+- Guide attention with contrast, size and spacing (padding/margins) — not
+  everything on the screen can weigh the same.
+- Give immediate feedback to any interaction: visible loading, success and
+  error states, never a button that "does nothing" while it processes.
 
-## Rendimiento de frontend
+## Frontend performance
 
-- Evita cargar recursos innecesarios (imágenes sin optimizar, librerías
-  completas cuando solo se usa una función); usa las herramientas de
-  optimización que ya trae el framework elegido (lazy loading, code
-  splitting) cuando el proyecto lo justifique.
+- Avoid loading unnecessary resources (unoptimized images, entire libraries
+  when only one function is used); use the optimization tools the chosen
+  framework already brings (lazy loading, code splitting) when the project
+  justifies it.
 
-## Leyes de UX aplicadas
+## UX laws applied
 
-- **Ley de Hick**: menos opciones visibles a la vez reducen la carga
-  cognitiva — si una pantalla tiene muchas acciones posibles, prioriza y
-  esconde las secundarias en vez de mostrarlas todas con el mismo peso.
-- **Ley de Fitts**: los elementos interactivos importantes (el botón
-  principal de una pantalla) deben ser grandes y estar cerca de donde el
-  usuario ya tiene la atención o el cursor — no pequeños ni lejos del
-  flujo natural de la tarea.
+- **Hick's Law**: fewer options visible at once reduce cognitive load — if a
+  screen has many possible actions, prioritize and hide the secondary ones
+  instead of showing them all with the same weight.
+- **Fitts's Law**: important interactive elements (a screen's main button)
+  should be large and close to where the user already has their attention or
+  cursor — not small or far from the natural flow of the task.
 
-## Con alguien no técnico
+## With someone non-technical
 
-No uses estos nombres (WCAG, Atomic Design, Ley de Hick) al hablar con la
-persona — son criterios internos de calidad, no algo que ella deba
-decidir. Si algo de esto afecta una decisión que sí le toca a ella (ej.
-"esta pantalla tiene demasiadas opciones, ¿cuáles son las 3 más
-importantes?"), tradúcelo a una pregunta simple.
+Do not use these names (WCAG, Atomic Design, Hick's Law) when talking to the
+person — they are internal quality criteria, not something they should
+decide. If any of this affects a decision that is theirs (e.g. "this screen
+has too many options, which are the 3 most important ones?"), translate it
+into a simple question.

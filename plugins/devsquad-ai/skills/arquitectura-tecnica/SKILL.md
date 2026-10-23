@@ -1,121 +1,115 @@
 ---
-description: Estándares para tomar decisiones de arquitectura en proyectos DevSquad AI — protocolo de selección de stack (nunca asumir Supabase/Vercel por defecto), marco de costo/impacto, atributos no funcionales y compromisos de calidad (estilo ATAM), patrones de arquitectura y descomposición modular, estándares de calidad de referencia (ISO/IEC 25010, ISO/IEC 5055, CMMI, IEEE 730), seguridad por defecto, y manejo de variables de entorno. Usar siempre al definir la arquitectura de un proyecto, antes de escribir arquitectura.md.
+description: Standards for making architecture decisions in DevSquad AI projects — stack selection protocol (never assume Supabase/Vercel by default), cost/impact framework, non-functional attributes and quality trade-offs (ATAM style), architecture patterns and modular decomposition, reference quality standards (ISO/IEC 25010, ISO/IEC 5055, CMMI, IEEE 730), security by default, and environment variable handling. Always use when defining a project's architecture, before writing arquitectura.md.
 ---
 
-# Arquitectura técnica con estándares
+# Technical architecture with standards
 
-## Protocolo de selección de stack — nunca asumas
+## Stack selection protocol — never assume
 
-Un error real detectado: el arquitecto asumía Next.js + Supabase + Vercel
-sin preguntar. Eso no vuelve a pasar. Antes de proponer cualquier stack:
+A real error detected: the architect assumed Next.js + Supabase + Vercel
+without asking. That does not happen again. Before proposing any stack:
 
-- **Si el perfil de la persona es no técnico** (revisa
-  `.devsquad/perfil.md`): ofrece el "kit básico para desplegar tu
-  aplicación" como recomendación, no como default silencioso. Dilo así:
-  > "Te recomiendo un paquete de herramientas gratis para empezar
-  > (Next.js + Supabase + Vercel) que te permite tener tu app funcionando
-  > en internet sin costo inicial. ¿Quieres que lo use, o prefieres que
-  > exploremos otras opciones?"
-  Si dice que sí, procede. Si duda o dice que no, pregunta qué le
-  preocupa y ajusta — nunca lo impongas.
+- **If the person's profile is non-technical** (check
+  `.devsquad/perfil.md`): offer the "basic kit to deploy your application"
+  as a recommendation, not as a silent default. Say it like this:
+  > "I recommend a free starter toolkit (Next.js + Supabase + Vercel) that
+  > lets you have your app running on the internet at no initial cost. Do
+  > you want me to use it, or would you rather we explore other options?"
+  If they say yes, proceed. If they hesitate or say no, ask what worries
+  them and adjust — never impose it.
 
-- **Si el perfil es técnico**: pregunta directamente y sin explicación de
-  más, algo como "¿tienes un stack en mente, o prefieres que te
-  recomiende uno según los requerimientos?". No asumas Supabase/Vercel
-  solo porque es el default histórico de DevSquad AI.
+- **If the profile is technical**: ask directly and without over-explaining,
+  something like "do you have a stack in mind, or do you prefer that I
+  recommend one based on the requirements?". Do not assume Supabase/Vercel
+  just because it is DevSquad AI's historical default.
 
-- **Si el perfil ya declara un stack**, este protocolo de preguntas no
-  aplica — ver la jerarquía de decisión en el prompt del agente
-  Arquitecto.
+- **If the profile already declares a stack**, this question protocol does
+  not apply — see the decision hierarchy in the Architect agent's prompt.
 
-## Marco de costo/impacto (obligatorio, ya definido en tu prompt de agente)
+## Cost/impact framework (mandatory, already defined in your agent prompt)
 
-Para cada decisión no obvia: costo estimado, impacto, e impacto a futuro.
-Esta skill no repite esa regla — vive en el prompt del agente porque es
-innegociable — pero recuerda aplicarla también a la elección del stack
-mismo, no solo a decisiones dentro de un stack ya elegido, y a cualquier
-estándar de proceso (CMMI, IEEE 730) que consideres adoptar más abajo.
+For each non-obvious decision: estimated cost, impact, and future impact.
+This skill does not repeat that rule — it lives in the agent prompt because
+it is non-negotiable — but remember to apply it also to the choice of the
+stack itself, not only to decisions within an already chosen stack, and to
+any process standard (CMMI, IEEE 730) you consider adopting below.
 
-## Atributos no funcionales (ANF)
+## Non-functional attributes (NFAs)
 
-Antes de aterrizar la arquitectura, identifica métricas objetivo, aunque
-sea de forma aproximada: tiempo de respuesta esperado, disponibilidad,
-concurrencia esperada (¿cuántas personas lo van a usar a la vez?). Con
-alguien no técnico, no le pidas estos términos — pregúntale en su idioma
-("¿esto lo vas a usar solo tú, o varias personas al mismo tiempo?", "¿qué
-tan grave sería que tardara unos segundos en responder?") y traduce tú la
-respuesta a un ANF. Documenta lo que salga, aunque sea una frase por
-atributo — no hace falta un proceso formal para un proyecto pequeño.
+Before settling the architecture, identify target metrics, even if
+approximate: expected response time, availability, expected concurrency (how
+many people will use it at once?). With someone non-technical, do not ask for
+these terms — ask in their language ("will only you use this, or several
+people at the same time?", "how bad would it be if it took a few seconds to
+respond?") and translate the answer into an NFA yourself. Document what comes
+out, even if it is one sentence per attribute — a formal process is not needed
+for a small project.
 
-## Análisis de compromisos (estilo ATAM)
+## Trade-off analysis (ATAM style)
 
-Para decisiones de arquitectura no triviales, nombra explícitamente qué
-atributo de calidad favorecen y cuál sacrifican (ej. "cachear esto lo hace
-más rápido, pero los datos pueden tardar unos segundos en reflejar
-cambios"; "más validaciones de seguridad agregan un paso extra al flujo
-del usuario"). Esta es la esencia de un Architecture Tradeoff Analysis
-Method (ATAM) aplicada de forma proporcional: no es un proceso formal
-completo con stakeholders y escenarios documentados salvo que la persona
-lo pida explícitamente — es el hábito de decir el trade-off en voz alta en
-vez de dejarlo implícito.
+For non-trivial architecture decisions, explicitly name which quality
+attribute they favor and which one they sacrifice (e.g. "caching this makes
+it faster, but the data may take a few seconds to reflect changes"; "more
+security validations add an extra step to the user's flow"). This is the
+essence of an Architecture Tradeoff Analysis Method (ATAM) applied in
+proportion: it is not a full formal process with stakeholders and documented
+scenarios unless the person explicitly asks for it — it is the habit of
+saying the trade-off out loud instead of leaving it implicit.
 
-## Patrones de arquitectura y descomposición modular
+## Architecture patterns and modular decomposition
 
-- Elige el patrón (monolito modular, capas, eventos, microservicios) según
-  la complejidad real del proyecto, no por moda. Para la mayoría de
-  proyectos de DevSquad AI (ver "Límite de alcance" en el prompt del
-  agente), un monolito modular bien separado es más apropiado que
-  microservicios — solo justifica algo más complejo si los requerimientos
-  genuinamente lo piden, y pasa esa decisión por el marco de costo/impacto.
-- Dentro de ese patrón, divide el sistema en componentes/capas con alta
-  cohesión y bajo acoplamiento (ej. presentación, lógica de negocio,
-  acceso a datos — ver skill `estandares-backend` para el detalle de
-  separación en capas) para facilitar pruebas y mantenimiento. Documenta
-  esta división en la estructura de carpetas del entregable.
+- Choose the pattern (modular monolith, layers, events, microservices)
+  according to the project's real complexity, not by fashion. For most
+  DevSquad AI projects (see "Scope limit" in the agent prompt), a well
+  separated modular monolith is more appropriate than microservices — only
+  justify something more complex if the requirements genuinely ask for it,
+  and put that decision through the cost/impact framework.
+- Within that pattern, divide the system into components/layers with high
+  cohesion and low coupling (e.g. presentation, business logic, data access
+  — see the `estandares-backend` skill for the detail on layer separation)
+  to ease testing and maintenance. Document this division in the folder
+  structure of the deliverable.
 
-## Estándares de calidad de referencia
+## Reference quality standards
 
-Úsalos como marco de referencia, no como checklist obligatoria a imponer
-en todo proyecto — su aplicación también pasa por el marco de
-costo/impacto:
+Use them as a frame of reference, not as a mandatory checklist to impose on
+every project — their application also goes through the cost/impact
+framework:
 
-- **ISO/IEC 25010**: define características de calidad del producto
-  (fiabilidad, eficiencia de rendimiento, seguridad, mantenibilidad,
-  usabilidad, compatibilidad, portabilidad). Úsalo como checklist mental
-  al revisar que la arquitectura no descuidó ninguna dimensión de calidad,
-  incluso en proyectos pequeños.
-- **ISO/IEC 5055**: mide la estructura interna del código (no solo que
-  "funcione") para asegurar seguridad y fiabilidad. Pásale esta expectativa
-  al Coder — se conecta con la rúbrica de calidad de la skill
-  `estandares-backend`.
-- **CMMI** e **IEEE 730**: son estándares de proceso y de aseguramiento de
-  calidad más propios de organizaciones grandes con requisitos de
-  cumplimiento. Menciónalos como referencia si la persona pertenece a una
-  empresa que los exige, pero no los impongas como proceso obligatorio en
-  proyectos pequeños o POCs — sería un costo desproporcionado para lo que
-  se está construyendo.
+- **ISO/IEC 25010**: defines product quality characteristics (reliability,
+  performance efficiency, security, maintainability, usability,
+  compatibility, portability). Use it as a mental checklist when verifying
+  that the architecture did not neglect any quality dimension, even in small
+  projects.
+- **ISO/IEC 5055**: measures the internal structure of the code (not just
+  that it "works") to ensure security and reliability. Pass this expectation
+  on to the Coder — it connects with the quality rubric of the
+  `estandares-backend` skill.
+- **CMMI** and **IEEE 730**: are process and quality-assurance standards more
+  typical of large organizations with compliance requirements. Mention them
+  as a reference if the person belongs to a company that demands them, but do
+  not impose them as a mandatory process in small projects or POCs — it would
+  be a disproportionate cost for what is being built.
 
-## Seguridad por defecto
+## Security by default
 
-- Activa reglas de seguridad a nivel de fila (RLS) o equivalente por
-  defecto en cualquier base de datos con acceso desde el cliente — no
-  como algo opcional a agregar después.
-- Ninguna key con privilegios elevados (ej. service role) debe planearse
-  para vivir en código que corre en el navegador.
-- Aplica principio de mínimo privilegio: cada pieza del sistema debe tener
-  acceso solo a lo que necesita, no más.
+- Enable row-level security (RLS) or the equivalent by default on any
+  database with client access — not as something optional to add later.
+- No key with elevated privileges (e.g. service role) should be planned to
+  live in code that runs in the browser.
+- Apply the principle of least privilege: each piece of the system must have
+  access only to what it needs, no more.
 
-## Variables de entorno — anticipa, no improvises
+## Environment variables — anticipate, don't improvise
 
-Enumera explícitamente en `.devsquad/arquitectura.md` qué variables de
-entorno va a necesitar el proyecto (nombres, para qué sirve cada una, y
-si es secreta o no) — esto le da al coder y al Orquestador lo necesario
-para avisar con anticipación, en vez de que la persona se entere a medio
-camino.
+Explicitly list in `.devsquad/arquitectura.md` which environment variables
+the project will need (names, what each one is for, and whether it is secret
+or not) — this gives the coder and the Orchestrator what they need to warn in
+advance, instead of the person finding out halfway through.
 
-## Conexión con la preparación del entorno
+## Connection with environment preparation
 
-Menciona explícitamente en tu entregable qué herramientas locales va a
-necesitar el stack elegido (ej. "Node.js y npm" para un stack de
-JavaScript). Esto permite que se avise a la persona con anticipación,
-antes de que el coder empiece — no después de que algo falle.
+Explicitly mention in your deliverable which local tools the chosen stack
+will need (e.g. "Node.js and npm" for a JavaScript stack). This allows the
+person to be warned in advance, before the coder starts — not after something
+fails.
