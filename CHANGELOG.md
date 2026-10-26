@@ -3,6 +3,15 @@
 > From 0.7.0 on, this file is written in English. The entries below it (0.6.1
 > and earlier) keep their original Spanish text.
 
+## [0.7.1] — 2026-10-26 — State files are no longer private to their writer
+
+### Fixed
+- `devsquad-estado` wrote `estado.json`, `track.json`, `plan.md` and `spec.md` through
+  `tempfile.mkstemp`, which creates files readable only by their owner (mode 0600). When
+  the person, the Factory and the agents are different users of the same folder, what one
+  wrote the other could not read (`EACCES` when the coder opened `plan.md`). The files now
+  get the normal mode of a text file, 0666 minus the umask of whoever writes them.
+
 ## [0.7.0] — 2026-10-21 — English (first version for English-speaking clients)
 
 DevSquad AI now works in English. The agents are told to write every file,

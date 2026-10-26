@@ -129,6 +129,12 @@ def escribir_atomico(ruta, texto):
     try:
         with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as f:
             f.write(texto)
+        # mkstemp crea el archivo con permiso solo para su dueño (0600). Estos archivos son el estado del proyecto y se
+        # comparten (la persona, la Factory y los agentes pueden ser usuarios distintos): se les da el permiso normal
+        # de un archivo de texto, 0666 menos el umask de quien escribe.
+        mascara = os.umask(0)
+        os.umask(mascara)
+        os.chmod(tmp, 0o666 & ~mascara)
         os.replace(tmp, ruta)
     except BaseException:
         if os.path.exists(tmp):

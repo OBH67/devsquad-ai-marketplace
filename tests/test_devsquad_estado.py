@@ -91,6 +91,28 @@ class PruebasInicio(Base):
         self.assertEqual(estado["schema_version"], 1)
         self.assertIsNone(estado["track_activo"])
 
+    def test_los_archivos_de_estado_no_quedan_solo_para_su_dueno(self):
+        """mkstemp los crea con 0600; el estado es compartido (persona, Factory y agentes pueden ser usuarios distintos)."""
+        self.ejecutar("init")
+        self.ejecutar("crear", "una-cosa", "--titulo", "Una cosa")
+        archivos = [os.path.join(self.proyecto, ".devsquad", "estado.json")]
+        for raiz, _, nombres in os.walk(os.path.join(self.proyecto, ".devsquad", "tracks")):
+            archivos += [os.path.join(raiz, n) for n in nombres]
+        self.assertGreaterEqual(len(archivos), 4)               # estado.json, track.json, plan.md y spec.md
+        for ruta in archivos:
+            modo = os.stat(ruta).st_mode & 0o777
+            self.assertEqual(modo & 0o044, 0o044, "%s quedó con permisos %o" % (ruta, modo))   # legible por grupo y otros
+
+    def test_el_estado_respeta_el_umask_de_quien_escribe(self):
+        self.ejecutar("init")
+        anterior = os.umask(0o077)
+        try:
+            self.ejecutar("crear", "privado", "--titulo", "Privado")
+        finally:
+            os.umask(anterior)
+        modo = os.stat(os.path.join(self.proyecto, ".devsquad", "estado.json")).st_mode & 0o777
+        self.assertEqual(modo & 0o077, 0, "con umask 077 el estado debe quedar privado, pero es %o" % modo)
+
     def test_init_es_idempotente(self):
         self.ejecutar("init")
         antes = self.leer("estado.json")
