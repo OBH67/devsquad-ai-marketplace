@@ -92,6 +92,9 @@ class Base(unittest.TestCase):
         """Arquitectura y diseño aprobados por la persona (requisito para `listo`)."""
         self.escribir(".devsquad/arquitectura.md", "# Arquitectura\n\nPolítica de cierre: humano\n")
         self.escribir(".devsquad/diseno.md", "# Diseño\n")
+        if not os.path.exists(os.path.join(self.p, ".devsquad", "requerimientos.md")):
+            self.escribir(".devsquad/brd.md", "# BRD — Inicial\n")
+            self.estado("aprobar", "brd", "--fuente", "terminal", "--por", "Ana")
         self.estado("aprobar", "arquitectura", "--fuente", "terminal", "--por", "Ana")
         self.estado("aprobar", "diseno", "--fuente", "terminal", "--por", "Ana")
 
@@ -201,11 +204,25 @@ class PruebasOrdenDeFasesYTracks(Base):
     def test_bsa_se_puede_invocar_primero(self):
         self.delega("bsa", agente="orquestador")
 
-    def test_arquitecto_exige_requerimientos(self):
+    def test_arquitecto_exige_el_brd(self):
         r = self.delega("arquitecto", agente="orquestador", esperado=2)
-        self.assertIn("requerimientos.md", r.stderr)
+        self.assertIn("brd.md", r.stderr)
         self.assertIn("bsa", r.stderr)
-        self.docs("requerimientos.md")
+        self.docs("brd.md")
+        r = self.delega("arquitecto", agente="orquestador", esperado=2)        # written, but no track yet
+        self.assertIn("no active track", r.stderr)
+        self.estado("crear", "inicial")
+        r = self.delega("arquitecto", agente="orquestador", esperado=2)        # nobody approved it
+        self.assertIn("has not approved the BRD", r.stderr)
+        self.estado("aprobar", "brd", "--fuente", "terminal", "--por", "Ana")
+        self.delega("arquitecto", agente="orquestador")
+        self.docs("arquitectura.md")
+        self.escribir(".devsquad/brd.md", "# BRD — changed after the approval\n")
+        r = self.delega("disenador", agente="orquestador", esperado=2)
+        self.assertIn("brd.md changed since it was approved", r.stderr)
+
+    def test_un_proyecto_anterior_al_brd_sigue_con_sus_requerimientos(self):
+        self.docs("requerimientos.md")                      # 0.7.x projects: requerimientos.md stands for the BRD
         self.delega("arquitecto", agente="orquestador")
 
     def test_disenador_exige_arquitectura(self):

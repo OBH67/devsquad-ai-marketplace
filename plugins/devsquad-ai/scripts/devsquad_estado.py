@@ -65,10 +65,16 @@ POLITICA_DEFECTO = "humano"
 
 # Aprobaciones humanas. Solo las fijan código (hooks / la Factory) a partir de una señal
 # humana; los agentes no pueden (compuertas del hook). `fuente` dice de dónde vino.
-APROBABLES = ("arquitectura", "diseno", "cierre", "comandos")
-DOCUMENTOS = {"arquitectura": "arquitectura.md", "diseno": "diseno.md"}
+APROBABLES = ("brd", "arquitectura", "diseno", "cierre", "comandos")
+DOCUMENTOS = {"brd": "brd.md", "arquitectura": "arquitectura.md", "diseno": "diseno.md"}
 FUENTES = ("terminal", "factory", "manual")
-APROBACIONES_PARA_LISTO = ("arquitectura", "diseno")
+APROBACIONES_PARA_LISTO = ("brd", "arquitectura", "diseno")
+# 0.8.0: the BSA writes a BRD (`brd.md`). A project started before keeps its `requerimientos.md`: it needs no BRD
+# approval (that phase was already done the old way) and every phase accepts it in place of the BRD.
+REQUISITOS_ANTIGUOS = "requerimientos.md"
+# 0.8.0: the designer delivers one HTML mock-up per key screen here. The design approval covers diseno.md AND every
+# mock-up: if any of them changes, the approval is stale and the coder stops until the person approves again.
+DIR_MAQUETAS = "maquetas"
 RAIZ_PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PERFIL = os.path.join(DIR_ESTADO, "perfil.md")
 
@@ -335,6 +341,45 @@ def huella_comandos(comandos):
     return hashlib.sha256("\n".join(c for _, c in comandos).encode("utf-8")).hexdigest()
 
 
+def es_proyecto_antiguo(raiz):
+    """True for a project whose requirements predate the BRD (requerimientos.md and no brd.md)."""
+    d = os.path.join(raiz, DIR_ESTADO)
+    return os.path.isfile(os.path.join(d, REQUISITOS_ANTIGUOS)) and not os.path.isfile(os.path.join(d, "brd.md"))
+
+
+def documento_de_requisitos(raiz):
+    """The requirements document of the project: brd.md, or requerimientos.md in a project that predates the BRD."""
+    return REQUISITOS_ANTIGUOS if es_proyecto_antiguo(raiz) else "brd.md"
+
+
+def maquetas(raiz):
+    """Sorted names of the HTML mock-ups in .devsquad/maquetas/ (only regular .html files directly inside it)."""
+    d = os.path.join(raiz, DIR_ESTADO, DIR_MAQUETAS)
+    try:
+        nombres = os.listdir(d)
+    except OSError:
+        return []
+    return sorted(n for n in nombres if n.lower().endswith(".html") and not os.path.islink(os.path.join(d, n))
+                  and os.path.isfile(os.path.join(d, n)))
+
+
+def huella_documento(raiz, objeto):
+    """The fingerprint an approval of `objeto` is tied to, or None if the document does not exist.
+
+    For `diseno` with mock-ups it covers diseno.md and every mock-up (name and content); without mock-ups it is the plain
+    sha256 of diseno.md, the same as before 0.8.0, so an approval given then is still valid."""
+    principal = sha256_archivo(os.path.join(raiz, DIR_ESTADO, DOCUMENTOS[objeto]))
+    if principal is None or objeto != "diseno":
+        return principal
+    nombres = maquetas(raiz)
+    if not nombres:
+        return principal
+    h = hashlib.sha256(("diseno.md\0%s\n" % principal).encode("utf-8"))
+    for n in nombres:
+        h.update(("%s/%s\0%s\n" % (DIR_MAQUETAS, n, sha256_archivo(os.path.join(raiz, DIR_ESTADO, DIR_MAQUETAS, n)))).encode("utf-8"))
+    return h.hexdigest()
+
+
 def estado_aprobacion(raiz, track, objeto, estado=None):
     """('ok' | 'falta' | 'obsoleta', detalle) de una aprobación humana."""
     if objeto == "comandos":
@@ -346,14 +391,17 @@ def estado_aprobacion(raiz, track, objeto, estado=None):
             return "obsoleta", "the profile's verification commands changed since they were approved"
         return "ok", ""
     reg = (track.get("aprobaciones") or {}).get(objeto)
+    if objeto == "brd" and not reg and es_proyecto_antiguo(raiz):
+        return "ok", "the project predates the BRD (requerimientos.md)"
     if not reg:
         return "falta", "there is no approval for %s" % objeto
     if objeto == "cierre":
         if git_head(raiz) != reg.get("commit"):
             return "obsoleta", "there are new commits since the approval (approved at %s)" % str(reg.get("commit"))[:7]
         return "ok", ""
-    if sha256_archivo(os.path.join(raiz, DIR_ESTADO, DOCUMENTOS[objeto])) != reg.get("sha256"):
-        return "obsoleta", "%s changed since it was approved" % DOCUMENTOS[objeto]
+    if huella_documento(raiz, objeto) != reg.get("sha256"):
+        que = "diseno.md or a mock-up in maquetas/" if objeto == "diseno" and (maquetas(raiz) or reg.get("maquetas")) else DOCUMENTOS[objeto]
+        return "obsoleta", "%s changed since it was approved" % que
     return "ok", ""
 
 
@@ -618,10 +666,12 @@ def cmd_aprobar(a, raiz):
     aviso = ""
     if a.objeto in DOCUMENTOS:
         ruta_doc = os.path.join(raiz, DIR_ESTADO, DOCUMENTOS[a.objeto])
-        huella = sha256_archivo(ruta_doc)
+        huella = huella_documento(raiz, a.objeto)
         if huella is None:
             raise ReglaError("%s/%s does not exist: there is nothing to approve yet." % (DIR_ESTADO, DOCUMENTOS[a.objeto]))
         registro["sha256"] = huella
+        if a.objeto == "diseno" and maquetas(raiz):
+            registro["maquetas"] = maquetas(raiz)
         if a.objeto == "arquitectura":
             with open(ruta_doc, encoding="utf-8") as f:
                 politica = politica_en_documento(f.read())

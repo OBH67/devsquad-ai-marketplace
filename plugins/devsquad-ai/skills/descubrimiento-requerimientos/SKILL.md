@@ -44,7 +44,11 @@ Use them as a starting point, adapted to each idea, one at a time:
 
 ## Definition of "done" for the deliverable
 
-`.devsquad/requerimientos.md` is not complete if:
+`.devsquad/brd.md` (the BRD) is not complete if:
 - Any story does not make the "what for" (the benefit) clear.
 - There is not at least one explicit separation between v1 and future.
 - An ambiguity was left without being marked as an open question.
+- A story has no acceptance criteria, no requirement (BR-n) or, when it is
+  something the person sees, no screen id from the "Screens" table.
+- The "Summary for the person" is missing, technical, or not in the
+  person's language.

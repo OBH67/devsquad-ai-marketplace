@@ -69,6 +69,8 @@ class Base(unittest.TestCase):
     def aprobar_planeacion(self):
         self.escribir(".devsquad/arquitectura.md", "# A\n\nPolítica de cierre: humano\n")
         self.escribir(".devsquad/diseno.md", "# D\n")
+        self.escribir(".devsquad/brd.md", "# BRD\n")
+        self.estado("aprobar", "brd", "--fuente", "terminal")
         self.estado("aprobar", "arquitectura", "--fuente", "terminal")
         self.estado("aprobar", "diseno", "--fuente", "terminal")
 
@@ -322,7 +324,8 @@ class PruebasPrompts(unittest.TestCase):
     def test_frontmatter_sin_dos_puntos_ni_almohadilla_sin_comillas(self):
         """La CI valida el frontmatter como YAML (con pyyaml, que aquí no está): `clave: a: b` no es válido."""
         for ruta, texto in self.textos():
-            if not texto.startswith("---\n"):
+            # The same files the CI parses as YAML (agents and SKILL.md); a vendored skill's reference notes are not.
+            if not texto.startswith("---\n") or not (ruta.startswith("agents/") or ruta.endswith("SKILL.md")):
                 continue
             for linea in texto[4:texto.index("\n---", 4)].split("\n"):
                 if ":" not in linea or linea.startswith((" ", "-")):

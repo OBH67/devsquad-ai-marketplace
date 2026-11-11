@@ -24,7 +24,7 @@ import devsquad_memoria as M
 
 MAX_CARACTERES = 10000
 PERFIL = "%s/perfil.md" % E.DIR_ESTADO
-ENTREGABLES = (("requerimientos.md", "bsa"), ("arquitectura.md", "arquitecto"), ("diseno.md", "disenador"))
+ENTREGABLES = (("brd.md", "bsa"), ("arquitectura.md", "arquitecto"), ("diseno.md", "disenador"))
 
 
 def recortar(texto, n):
@@ -64,7 +64,8 @@ def tareas(raiz, track_id):
 def siguiente_paso(raiz, track):
     if not perfil_ok(raiz):
         return "create the profile with the `iniciar-proyecto` skill (without a profile the gates deny everything)."
-    faltan = [(f, a) for f, a in ENTREGABLES if not os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f))]
+    faltan = [(f, a) for f, a in ENTREGABLES if not os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f))
+              and not (f == "brd.md" and E.es_proyecto_antiguo(raiz))]
     if track is None:
         return "delegate to `%s` (`%s` is missing)." % (faltan[0][1], faltan[0][0]) if faltan else \
                "define a new track with the BSA."

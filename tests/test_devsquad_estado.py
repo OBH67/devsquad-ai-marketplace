@@ -65,6 +65,8 @@ class Base(unittest.TestCase):
         """Arquitectura y diseño aprobados por la persona (requisito para `listo`)."""
         self.escribir(("arquitectura.md",), "# Arquitectura\n\nPolítica de cierre: humano\n")
         self.escribir(("diseno.md",), "# Diseño\n")
+        self.escribir(("brd.md",), "# BRD\n")
+        self.ejecutar("aprobar", "brd", "--fuente", "manual")
         self.ejecutar("aprobar", "arquitectura", "--fuente", "manual")
         self.ejecutar("aprobar", "diseno", "--fuente", "manual")
 

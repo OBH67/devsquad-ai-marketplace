@@ -1,7 +1,7 @@
 ---
-description: "Human approval of the architecture, the design, the verification commands or the closing of a track. Only the person invokes it (for example /devsquad-ai:aprobar arquitectura); the model cannot."
+description: "Human approval of the BRD, the architecture, the design (with its mock-ups), the verification commands or the closing of a track. Only the person invokes it (for example /devsquad-ai:aprobar arquitectura); the model cannot."
 disable-model-invocation: true
-argument-hint: "arquitectura | diseno | comandos | cierre"
+argument-hint: "brd | arquitectura | diseno | comandos | cierre"
 ---
 
 # Approve (the person's decision)
@@ -22,7 +22,8 @@ Arguments received: $ARGUMENTS
   `devsquad-estado aprobar <object> --fuente terminal`. Never say it was
   approved if you did not see the hook's result.
 
-Objects: `arquitectura` and `diseno` (the documents as they are now; if they
-change afterwards, they must be approved again), `comandos` (the profile's
+Objects: `brd`, `arquitectura` and `diseno` (the documents as they are now,
+and for `diseno` also every mock-up in `.devsquad/maquetas/`; if they change
+afterwards, they must be approved again), `comandos` (the profile's
 verification commands), `cierre` (the track's closing, tied to the exact
 commit).

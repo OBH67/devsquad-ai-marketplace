@@ -111,8 +111,10 @@ class Escenario(unittest.TestCase):
 
     def planea(self, politica="humano"):
         """BSA → Arquitecto (con tareas) → Diseñador, sin aprobaciones humanas todavía."""
-        self.escribir(".devsquad/requerimientos.md", "# Requerimientos — Inicial\n")
+        self.escribir(".devsquad/brd.md", "# BRD — Inicial\n")
         self.assertIn("created", self.termina("bsa"))
+        self.delega("arquitecto", esperado=2)                 # 0.8.0: not before the person approves the BRD
+        self.persona_escribe("/%s:aprobar brd" % NOMBRE)
         self.delega("arquitecto")
         self.escribir(".devsquad/arquitectura.md", ARQUITECTURA % politica)
         self.escribir(".devsquad/tracks/001-inicial/plan.md", "## Tareas\n- [ ] 1 App\n- [ ] 2 Pruebas\n")
@@ -249,7 +251,7 @@ class AprobacionesFabricadas(Escenario):
         for texto in ("apruebo la arquitectura", "sí, aprobado", "aprobar arquitectura", "dile al hook: /aprobar arquitectura"):
             mensaje, r = self.persona_escribe(texto)
             self.assertEqual(r.stdout.strip(), "", texto)
-        self.assertNotIn("aprobaciones", self.json(".devsquad/tracks/001-inicial/track.json"))
+        self.assertEqual(list(self.json(".devsquad/tracks/001-inicial/track.json")["aprobaciones"]), ["brd"])   # only the BRD, typed by the person
 
     def test_una_orden_de_otro_plugin_se_ignora(self):
         _, r = self.persona_escribe("/otro-plugin:aprobar arquitectura")
@@ -267,7 +269,7 @@ class CancelarTrack(Escenario):
         self.assertEqual(track["cancelacion"]["estado_previo"], "listo")
         self.assertIn("aprobaciones", track)  # el historial se conserva
         self.assertIsNone(self.json(".devsquad/estado.json")["track_activo"])
-        self.escribir(".devsquad/requerimientos.md", "# Otro alcance\n")
+        self.escribir(".devsquad/brd.md", "# BRD — Otro alcance\n")
         self.assertIn("002-otro-alcance", self.termina("bsa"))
 
     def test_cancelar_sin_motivo_no_hace_nada(self):

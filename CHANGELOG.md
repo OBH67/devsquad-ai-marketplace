@@ -3,6 +3,28 @@
 > From 0.7.0 on, this file is written in English. The entries below it (0.6.1
 > and earlier) keep their original Spanish text.
 
+## [0.8.0] — 2026-11-11 — BRD, HTML mock-ups and two design skills
+
+### Added
+- **BRD.** The BSA writes a Business Requirements Document, `.devsquad/brd.md` (summary for the person in their language,
+  goals, scope, business requirements BR-n, user stories US-n with acceptance criteria and their screen, a screens table,
+  rules, open questions). Every later phase works from it.
+- **BRD approval** (`brd`). The architect cannot start until the person approves the BRD (gate in the PreToolUse hook),
+  and a track needs it to move to `listo`. If the BRD changes after the approval, the approval is stale.
+- **HTML mock-ups.** The designer draws one self-contained mock-up per screen of the BRD in
+  `.devsquad/maquetas/<screen-id>.html` (no JavaScript, nothing from the internet, mobile first, empty and error states).
+  The **design approval covers diseno.md and every mock-up**: one changed character, a new screen or a removed one makes
+  it stale and blocks the coder until the person approves again. Without mock-ups the fingerprint is the old one, so an
+  approval given before 0.8.0 stays valid.
+- The coder builds each screen exactly as its approved mock-up (copying its `:root` tokens) and stops if the mock-up does
+  not show something the story needs. The architect's tasks name the story (US-n) and the screen's mock-up.
+- The architect's and the designer's documents start with an `## In plain words` section in the person's language.
+- Vendored skills `hallmark` and `ui-ux-pro-max` (MIT; see `skills/THIRD-PARTY.md`). The designer gets Grep and Glob.
+
+### Compatibility
+- A project started before 0.8.0 keeps its `requerimientos.md`: it stands for the BRD in every phase and needs no BRD
+  approval.
+
 ## [0.7.1] — 2026-10-26 — State files are no longer private to their writer
 
 ### Fixed

@@ -36,13 +36,13 @@ import devsquad_memoria as M  # noqa: E402
 import devsquad_puntero as P  # noqa: E402
 
 # Entregables de cada fase dentro de .devsquad/ y quién los produce.
-ENTREGABLES = {"requerimientos.md": "bsa", "arquitectura.md": "arquitecto", "diseno.md": "disenador"}
+ENTREGABLES = {"brd.md": "bsa", "arquitectura.md": "arquitecto", "diseno.md": "disenador"}
 # Qué entregables deben existir antes de delegar en cada agente (orden de fases).
 REQUISITOS = {
     "bsa": (),
-    "arquitecto": ("requerimientos.md",),
-    "disenador": ("requerimientos.md", "arquitectura.md"),
-    "coder": ("requerimientos.md", "arquitectura.md", "diseno.md"),
+    "arquitecto": ("brd.md",),
+    "disenador": ("brd.md", "arquitectura.md"),
+    "coder": ("brd.md", "arquitectura.md", "diseno.md"),
 }
 ESTADOS_DE_TRABAJO = ("en_progreso", "correcciones")
 MAX_BLOQUEOS = 3            # bloqueos seguidos del coder antes de escalar a la persona
@@ -240,11 +240,34 @@ def compuerta_protegidos(raiz, rel):
                       "person whether they authorize the change; do not modify or regenerate it." % (rel, patron))
 
 
+def existe_entregable(raiz, f):
+    """A phase's deliverable exists. A project that predates the BRD (0.8.0) has requerimientos.md in its place."""
+    if os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f)):
+        return True
+    return f == "brd.md" and os.path.exists(os.path.join(raiz, E.DIR_ESTADO, E.REQUISITOS_ANTIGUOS))
+
+
 def compuerta_orden_de_fases(raiz, destino):
-    faltan = [f for f in REQUISITOS.get(destino, ()) if not os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f))]
+    faltan = [f for f in REQUISITOS.get(destino, ()) if not existe_entregable(raiz, f)]
     if faltan:
         pasos = ", ".join("`%s` (produced by %s)" % (f, ENTREGABLES[f]) for f in faltan)
         raise Bloqueo("You cannot delegate to %s yet: %s missing. Next step: complete that phase first." % (destino, pasos))
+    if "brd.md" in REQUISITOS.get(destino, ()) and not E.es_proyecto_antiguo(raiz):
+        compuerta_brd_aprobado(raiz, destino)
+
+
+def compuerta_brd_aprobado(raiz, destino):
+    """0.8.0: nothing is designed or built on a BRD the person has not approved (if she changes what she wants, no
+    architecture or design is thrown away). A project that predates the BRD skips this (it has requerimientos.md)."""
+    tid, track = track_activo(raiz)
+    if not track:
+        raise Bloqueo("You cannot delegate to %s yet: there is no active track for the BRD (it is born when the BSA finishes). "
+                      "Next step: let the BSA finish the BRD." % destino)
+    estado, detalle = E.estado_aprobacion(raiz, track, "brd")
+    if estado != "ok":
+        raise Bloqueo("You cannot delegate to %s yet: the person has not approved the BRD (%s). Next step: show them the "
+                      "\"Summary for the person\" of .devsquad/brd.md and ask for the approval; %s."
+                      % (destino, detalle, E.comoaprobar("brd")))
 
 
 def compuerta_track_para_coder(raiz):
@@ -433,12 +456,14 @@ def revisar_cambios(raiz):
 # --------------------------------------------------------------- SubagentStop
 
 def titulo_desde_requerimientos(raiz):
-    """Primer `# título` de requerimientos.md sin el prefijo «Requerimientos —», o '' si no hay."""
-    texto = leer_texto(os.path.join(raiz, E.DIR_ESTADO, "requerimientos.md")) or ""
+    """Primer `# título` del BRD (o de requerimientos.md en un proyecto anterior) sin el prefijo «BRD —»,
+    «Business Requirements Document —» o «Requerimientos —», o '' si no hay."""
+    texto = leer_texto(os.path.join(raiz, E.DIR_ESTADO, E.documento_de_requisitos(raiz))) or ""
     m = re.search(r"^#\s+(.+)$", texto, re.MULTILINE)
     if not m:
         return ""
-    titulo = re.sub(r"^(requirements|requerimientos|requisitos)\b\s*[:\-—–]*\s*(de(l)?\s+|for\s+|of\s+)?", "", m.group(1).strip(), flags=re.IGNORECASE)
+    titulo = re.sub(r"^(business\s+requirements\s+document|brd|requirements|requerimientos|requisitos)\b\s*[:\-—–]*\s*(de(l)?\s+|for\s+|of\s+)?",
+                    "", m.group(1).strip(), flags=re.IGNORECASE)
     return (titulo or m.group(1)).strip()
 
 
@@ -456,17 +481,16 @@ def slug_desde_titulo(titulo, maximo=40):
 
 def avanzar_planeacion(raiz, rol):
     mensajes = []
-    existe = lambda f: os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f))
     if not os.path.exists(E.ruta_estado(raiz)):
         estado_cli(raiz, "init")
     tid, track = track_activo(raiz)
-    if rol == "bsa" and existe("requerimientos.md") and not tid:
+    if rol == "bsa" and existe_entregable(raiz, "brd.md") and not tid:
         titulo = titulo_desde_requerimientos(raiz)
         args = ["crear", slug_desde_titulo(titulo)] + (["--titulo", titulo[:120]] if titulo else [])
         codigo, out, err = estado_cli(raiz, *args)
         mensajes.append(out if codigo == 0 else "The track could not be created: " + err)
         tid, track = track_activo(raiz)
-    if track and track["estado"] == "borrador" and all(existe(f) for f in ENTREGABLES):
+    if track and track["estado"] == "borrador" and all(existe_entregable(raiz, f) for f in ENTREGABLES):
         codigo, out, err = estado_cli(raiz, "transicion", "listo")
         mensajes.append(out if codigo == 0 else
                         "Track %s does not move to `listo`: %s" % (tid, err.replace("devsquad-estado: ", "")))
@@ -664,7 +688,7 @@ def avanzar_tras_aprobacion(raiz, objeto):
     if not track:
         return []
     if objeto in E.APROBACIONES_PARA_LISTO and track["estado"] == "borrador":
-        if all(os.path.exists(os.path.join(raiz, E.DIR_ESTADO, f)) for f in ENTREGABLES):
+        if all(existe_entregable(raiz, f) for f in ENTREGABLES):
             codigo, out, err = estado_cli(raiz, "transicion", "listo")
             return [out] if codigo == 0 else ["The track is still in borrador: " + err.replace("devsquad-estado: ", "")]
         return []
