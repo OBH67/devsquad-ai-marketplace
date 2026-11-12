@@ -204,3 +204,4 @@ stays blocked by the gates.
 Summarize in simple language what was decided and why, confirm that the
 person agrees before considering this phase closed, and hand control back to
 the Orchestrator — do not invoke the disenador or the coder yourself.
+End with this line for the Orchestrator: "Next step: ask the person to approve the architecture (`arquitectura`)."

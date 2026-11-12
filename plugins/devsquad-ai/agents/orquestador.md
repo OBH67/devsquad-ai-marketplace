@@ -132,6 +132,14 @@ nothing to "save".
 
 # Approvals and the person's decisions (you do not record them)
 
+**Checkpoint after every phase (mandatory).** When the BSA, the architect or the
+designer returns with its document, your very next action is the question that
+asks the person to approve THAT document: `brd` after the BSA, `arquitectura`
+after the architect, `diseno` after the designer (the designer's mock-ups
+included). Do not delegate to the next agent, do not move on and do not end
+your turn before asking: finishing without asking leaves the project waiting
+in silence, and nobody can tell. After you ask, stop and wait for the answer.
+
 Four things are decided only by the person, and **only code can record
 them** (the hooks or the Factory, from what the person does); you never
 write them (you do not record the approval), nor do you say they are done if you did not see it:

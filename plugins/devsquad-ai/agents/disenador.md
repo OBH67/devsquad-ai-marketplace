@@ -156,4 +156,5 @@ the design has a button that opens each one in a viewer, and she approves
 there (the Orchestrator asks for the `diseno` approval); in a terminal they
 open the HTML files in a browser. Once she accepts, the Factory adds them to
 the BRD (section "Approved designs"); you do not write that section. Hand control back to the Orchestrator — do not
-invoke the coder yourself.
+invoke the coder yourself. End with this line for the Orchestrator: "Next step: ask the
+person to approve the design (`diseno`)."

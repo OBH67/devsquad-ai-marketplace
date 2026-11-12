@@ -80,7 +80,8 @@ def siguiente_paso(raiz, track):
             pass
         sin = [o for o in E.APROBACIONES_PARA_LISTO if E.estado_aprobacion(raiz, track, o)[0] != "ok"]
         if sin:
-            return ("wait for the human approval of %s (do not record it yourself): %s." % (", ".join(sin), E.comoaprobar(sin[0])))
+            return ("ASK the person now for the approval of %s, then stop and wait for the answer (do not record it yourself, do not "
+                    "delegate to another agent and do not end your turn without asking): %s." % (", ".join(sin), E.comoaprobar(sin[0])))
         return "the track moves to `listo` as soon as the last approval is recorded."
     if estado in ("en_progreso", "correcciones", "en_revision", "verificado"):
         motivo = E.motivo_no_cerrable(raiz, track)

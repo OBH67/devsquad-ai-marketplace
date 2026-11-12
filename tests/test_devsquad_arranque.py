@@ -105,7 +105,7 @@ class PruebasPuntero(Base):
         t = self.puntero()
         self.assertIn("Next task: 1 \"Crear el modelo\"", t)
         self.assertIn("Human approvals: architecture missing · design missing", t)
-        self.assertIn("wait for the human approval of arquitectura, diseno (do not record it yourself)", t)
+        self.assertIn("ASK the person now for the approval of arquitectura, diseno, then stop and wait for the answer", t)
         self.assertIn("/devsquad-ai:aprobar arquitectura", t)
         self.aprobar_planeacion()
         self.assertIn("Human approvals: architecture ok · design ok", self.puntero())
@@ -360,3 +360,25 @@ class PruebasPrompts(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PruebasElOrquestadorNoOlvidaPreguntar(unittest.TestCase):
+    """Omar, 2026-11-12: configure the orchestrator so it never forgets to ask for the approval of a phase's document."""
+
+    def texto(self, *partes):
+        with open(os.path.join(PLUGIN, *partes), encoding="utf-8") as f:
+            return f.read()
+
+    def test_el_orquestador_tiene_un_punto_de_control_obligatorio_tras_cada_fase(self):
+        t = self.texto("agents", "orquestador.md")
+        self.assertIn("Checkpoint after every phase (mandatory)", t)
+        for objeto in ("`brd` after the BSA", "`arquitectura`\nafter the architect", "`diseno` after the designer"):
+            self.assertIn(objeto, t)
+        self.assertIn("do not end\nyour turn before asking", t)
+
+    def test_cada_fase_termina_diciendole_al_orquestador_que_pregunte(self):
+        for agente, objeto in (("bsa", "`brd`"), ("arquitecto", "`arquitectura`"), ("disenador", "`diseno`")):
+            t = " ".join(self.texto("agents", agente + ".md").split())
+            self.assertIn("End with this line for the Orchestrator", t, agente)
+            self.assertIn("Next step: ask the person to approve", t, agente)
+            self.assertIn(objeto, t.split("End with this line for the Orchestrator")[1], agente)

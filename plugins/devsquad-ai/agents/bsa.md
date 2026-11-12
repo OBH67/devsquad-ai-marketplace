@@ -101,3 +101,4 @@ for later. This is what the person reads before approving.>
 
 Summarize in 3-4 lines, in simple language, what was defined, and hand
 control back to the Orchestrator — do not invoke the architect yourself.
+End with this line for the Orchestrator: "Next step: ask the person to approve the BRD (`brd`)."

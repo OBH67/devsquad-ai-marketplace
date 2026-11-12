@@ -3,6 +3,18 @@
 > From 0.7.0 on, this file is written in English. The entries below it (0.6.1
 > and earlier) keep their original Spanish text.
 
+## [0.9.2] — 2026-11-12 — The orchestrator does not forget to ask for a phase's approval
+
+### Changed
+- The orchestrator has a mandatory **checkpoint after every phase**: when the BSA, the architect or the designer returns with
+  its document, its very next action is the question that asks the person to approve it (`brd`, `arquitectura`, `diseno`);
+  it does not delegate to the next agent, move on or end its turn before asking.
+- Each phase agent ends with a line for the orchestrator: «Next step: ask the person to approve …».
+- The startup pointer now says **ASK the person now** for the missing approvals, instead of «wait for» them (which read as if a
+  question were already open).
+- Behind them, the gates stay: the architect cannot start without the BRD approval and the coder cannot start without the
+  BRD, architecture and design approvals; the gate's message tells the orchestrator to ask.
+
 ## [0.9.1] — 2026-11-12 — A feature that needs a drawing cannot go on without it
 
 ### Changed
