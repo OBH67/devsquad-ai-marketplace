@@ -127,7 +127,7 @@ that the feature in the BRD adds or changes, one file per row of the BRD's
 `nueva-cita.html`). `<track>` is the `track_activo` of `.devsquad/estado.json`
 (for example `001-agenda`). **If the feature has no screen (a rule, a
 notification, something on the server), draw nothing: no mock-up is needed and
-nothing is blocked.** Do not redraw the app's other screens. The mock-up is
+nothing is blocked.** If it does have screens, **every screen the BRD lists needs its mock-up**: the design cannot be approved, and the coder cannot start, until they exist. Do not redraw the app's other screens. The mock-up is
 what the person approves and what the coder copies: nothing on the final screen may differ
 from it without a new approval, so draw it as the real screen, not a sketch.
 

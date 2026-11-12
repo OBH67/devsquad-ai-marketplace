@@ -517,6 +517,69 @@ class BrdYMaquetas(Base):
         self.estado("aprobar", "diseno", "--fuente", "factory", "--por", "esposa")
         self.assertEqual(open(self.ruta("brd.md"), encoding="utf-8").read(), antes)
 
+    # --- the design of a feature that needs a drawing cannot be skipped (Omar, 2026-11-12) ---
+    BRD_CON_PANTALLAS = (
+        "# BRD — Agenda\n\n## Summary for the person\nUna agenda para tu consultorio, con un formulario para pedir cita.\n\n"
+        "## 6. Screens\n| Screen id | What the person does there | Stories |\n| --- | --- | --- |\n"
+        "| inicio | Sees today's appointments | US-2 |\n| `nueva-cita` | Books an appointment | US-1 |\n\n## 7. Rules\n")
+
+    def con_pantallas(self):
+        self.track(aprobar=False)
+        self.escribir(("brd.md",), self.BRD_CON_PANTALLAS)
+
+    def test_no_se_puede_aprobar_el_diseno_si_falta_la_maqueta_de_una_pantalla_del_brd(self):
+        self.con_pantallas()
+        self.assertEqual(self.E().pantallas_del_brd(self.p), ["inicio", "nueva-cita"])
+        r = self.estado("aprobar", "diseno", "--fuente", "terminal", esperado=1)
+        self.assertIn("inicio.html, nueva-cita.html", r.stderr)
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio</title>")
+        r = self.estado("aprobar", "diseno", "--fuente", "terminal", esperado=1)
+        self.assertIn("nueva-cita.html", r.stderr)
+        self.assertNotIn("inicio.html", r.stderr)
+        self.maqueta("nueva-cita.html", "<!doctype html><title>Nueva cita</title>")
+        self.estado("aprobar", "diseno", "--fuente", "terminal")
+
+    def test_el_track_no_pasa_a_listo_ni_el_coder_trabaja_sin_las_maquetas_que_pide_el_brd(self):
+        self.con_pantallas()
+        self.estado("aprobar", "brd", "--fuente", "terminal")
+        self.estado("aprobar", "arquitectura", "--fuente", "terminal")
+        self.escribir(("diseno.md",), "# Diseño\n")
+        self.maqueta("inicio.html", "<!doctype html>")
+        self.maqueta("nueva-cita.html", "<!doctype html>")
+        self.estado("aprobar", "diseno", "--fuente", "terminal")
+        self.assertEqual(self.E().faltan_aprobaciones_para_listo(self.p, self.track_json()), [])
+        self.borrar_maqueta("nueva-cita.html")                      # a drawing disappears after the approval
+        faltas = self.E().faltan_aprobaciones_para_listo(self.p, self.track_json())
+        self.assertEqual(len(faltas), 1)
+        self.assertIn("without a mock-up", faltas[0])
+        self.assertIn("nueva-cita.html", faltas[0])
+        self.estado("transicion", "listo", esperado=1)
+
+    def test_un_brd_que_agrega_una_pantalla_deja_obsoleta_la_aprobacion_del_diseno(self):
+        self.track(aprobar=False)
+        self.escribir(("brd.md",), self.BRD_CON_PANTALLAS.replace("| `nueva-cita` | Books an appointment | US-1 |\n", ""))
+        self.maqueta("inicio.html", "<!doctype html>")
+        self.estado("aprobar", "diseno", "--fuente", "terminal")
+        self.assertEqual(self.E().estado_aprobacion(self.p, self.track_json(), "diseno")[0], "ok")
+        self.escribir(("brd.md",), self.BRD_CON_PANTALLAS)             # the BRD now asks for one more screen
+        self.assertEqual(self.E().estado_aprobacion(self.p, self.track_json(), "diseno")[0], "falta")
+
+    def test_una_funcionalidad_que_dice_none_en_pantallas_no_necesita_dibujos(self):
+        self.track(aprobar=False)
+        self.escribir(("brd.md",), self.BRD_CON_PANTALLAS.split("| inicio")[0] + "| None: this feature has no screen | — | — |\n\n## 7. Rules\n")
+        self.assertEqual(self.E().pantallas_del_brd(self.p), [])
+        self.assertEqual(self.E().maquetas_faltantes(self.p, self.TRACK), [])
+        self.estado("aprobar", "diseno", "--fuente", "terminal")
+        for celda in ("none", "None", "—", "N/A"):
+            self.escribir(("brd.md",), self.BRD_CON_PANTALLAS.split("| inicio")[0] + "| %s | — | — |\n" % celda)
+            self.assertEqual(self.E().pantallas_del_brd(self.p), [], celda)
+
+    def test_un_proyecto_anterior_al_brd_no_pide_maquetas(self):
+        self.track(aprobar=False)
+        os.remove(self.ruta("brd.md"))
+        self.escribir(("requerimientos.md",), "# R\n\n## Screens\n| inicio | x |\n")
+        self.assertEqual(self.E().maquetas_faltantes(self.p, self.TRACK), [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -3,6 +3,14 @@
 > From 0.7.0 on, this file is written in English. The entries below it (0.6.1
 > and earlier) keep their original Spanish text.
 
+## [0.9.1] — 2026-11-12 — A feature that needs a drawing cannot go on without it
+
+### Changed
+- The design approval now depends on the BRD's «Screens» table: `aprobar diseno` is refused, and an existing approval stops
+  counting (the coder and `listo` are blocked), while a screen the BRD lists for the feature has no mock-up in
+  `.devsquad/tracks/<track>/maquetas/`. A feature whose table says «None: this feature has no screen» needs no drawing. The
+  rule lives in DevSquad, so it holds in the terminal and in the Factory alike (the Factory only checked it when asking).
+
 ## [0.9.0] — 2026-11-12 — Mock-ups belong to a feature, and the approved ones go into the BRD
 
 ### Changed

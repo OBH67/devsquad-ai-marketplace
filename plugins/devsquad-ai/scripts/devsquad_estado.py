@@ -372,6 +372,41 @@ def maquetas(raiz, track_id):
                   and os.path.isfile(os.path.join(d, n)))
 
 
+SIN_PANTALLA = ("none", "no", "n/a", "na", "-", "—", "ninguna")
+
+
+def pantallas_del_brd(raiz):
+    """Screen ids of the BRD's «Screens» table (first column), in order. [] when the BRD does not exist, has no such table
+    or says there is no screen («None: this feature has no screen»)."""
+    try:
+        with open(os.path.join(raiz, DIR_ESTADO, "brd.md"), encoding="utf-8", errors="replace") as f:
+            texto = f.read()
+    except OSError:
+        return []
+    m = re.search(r"^##\s*(?:\d+\.\s*)?Screens\b.*?$(.*?)(?=^##\s|\Z)", texto, re.MULTILINE | re.DOTALL | re.IGNORECASE)
+    if not m:
+        return []
+    ids = []
+    for linea in m.group(1).splitlines():
+        celdas = [c.strip().strip("`") for c in linea.strip().strip("|").split("|")]
+        if len(celdas) < 2 or not celdas[0] or set(celdas[0]) <= set("-: "):
+            continue
+        c = celdas[0].lower()
+        if c in ("screen id", "screen", "id") or c in SIN_PANTALLA:
+            continue
+        if re.match(r"^[a-z0-9][a-z0-9-]{0,62}$", c) and c not in ids:
+            ids.append(c)
+    return ids
+
+
+def maquetas_faltantes(raiz, track_id):
+    """Screens the BRD lists for this feature that have no mock-up yet. A feature the BRD says has no screen has none to draw."""
+    if es_proyecto_antiguo(raiz):
+        return []
+    hechas = set(maquetas(raiz, track_id))
+    return [p for p in pantallas_del_brd(raiz) if p + ".html" not in hechas]
+
+
 def huella_documento(raiz, objeto, track_id=None):
     """The fingerprint an approval of `objeto` is tied to, or None if the document does not exist.
 
@@ -424,6 +459,13 @@ def estado_aprobacion(raiz, track, objeto, estado=None):
         if reg.get("sha256") != actual:
             return "obsoleta", "the profile's verification commands changed since they were approved"
         return "ok", ""
+    if objeto == "diseno":
+        # The design is not approvable (and an approval does not stand) while a screen of the BRD has no mock-up: if the
+        # feature needs a drawing, the drawing is approved before the phases go on (Omar, 2026-11-12).
+        faltan = maquetas_faltantes(raiz, track.get("id"))
+        if faltan:
+            return "falta", "the BRD lists screens without a mock-up in .devsquad/tracks/%s/maquetas/: %s" % (
+                track.get("id"), ", ".join(p + ".html" for p in faltan))
     reg = (track.get("aprobaciones") or {}).get(objeto)
     if objeto == "brd" and not reg and es_proyecto_antiguo(raiz):
         return "ok", "the project predates the BRD (requerimientos.md)"
@@ -698,6 +740,12 @@ def cmd_aprobar(a, raiz):
     if track["estado"] in ESTADOS_FINALES:
         raise ReglaError("Track %s is %s; it does not accept approvals." % (track_id, track["estado"]))
     aviso = ""
+    if a.objeto == "diseno":
+        faltan = maquetas_faltantes(raiz, track_id)
+        if faltan:
+            raise ReglaError("The design cannot be approved yet: the BRD lists screens without a mock-up (%s). Draw them in "
+                             ".devsquad/tracks/%s/maquetas/ first (a feature with no screen says «None» in the BRD's Screens table)."
+                             % (", ".join(p + ".html" for p in faltan), track_id))
     if a.objeto in DOCUMENTOS:
         ruta_doc = os.path.join(raiz, DIR_ESTADO, DOCUMENTOS[a.objeto])
         huella = huella_documento(raiz, a.objeto, track_id)
