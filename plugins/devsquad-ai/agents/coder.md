@@ -70,10 +70,10 @@ the person's explicit confirmation.
   mock-up does not show something the story needs (a state, a message),
   stop and report it so the designer adds it and the person approves it —
   never invent it.
-- When you build UI, the `ui-ux-pro-max` skill has stack-specific guidance
-  (for example Next.js, React, Tailwind): run its search script from your
-  sandbox (`python3 <skill>/scripts/search.py "<query>" --stack <stack>`) or
-  read its `data/stacks/` files.
+- In the Factory, before the person is asked to approve your finished work, code compares the colours and
+  typefaces declared at `:root` in the mock-ups with the project's styles, and refuses the question if you
+  used another palette or another font (for example the template's). Copying the tokens as they are is what
+  avoids that.
 - Before applying a pattern or convention, if you doubt whether it is still
   the recommended practice in the current version of the language, framework
   or library in use, verify it with WebSearch instead of trusting only what

@@ -3,6 +3,30 @@
 > From 0.7.0 on, this file is written in English. The entries below it (0.6.1
 > and earlier) keep their original Spanish text.
 
+## [0.10.0] — 2026-11-12 — A design direction instead of a style catalog
+
+### Removed
+- The `ui-ux-pro-max` skill (the designer's and the coder's). For a physiotherapy booking app it recommended a landing
+  page with testimonials, sky blue `#0EA5E9`, Poppins and Google web fonts (which a mock-up cannot load): the same face for every
+  project of the same kind, the opposite of what the person wants. A designer that read it set its presets aside.
+- hallmark as a skill (`SKILL.md`, themes, genres, references): it is written for marketing pages. What stays is its
+  mechanical checker, `sloplint`, which the Factory runs on every mock-up (it catches real tells: tracked capitals, emoji, a card
+  inside a card, a missing `overflow-x: clip`).
+
+### Changed
+- The designer follows a **design direction** (`agents/disenador.md`): read the people, set aside the design it would make anyway,
+  three directions and one chosen, a `## Direction` (a concrete world, one signature element, three refusals), a palette and fonts
+  that do not come from the product category, a `## Traceability` table (every acceptance criterion → the element that shows
+  it) and `## Assumptions to confirm`. The checker's rules are in its instructions so it meets them while drawing.
+- The coder is told that the Factory compares the mock-ups' `:root` tokens with the project's styles before the closing question.
+
+### How it was decided
+Same BRD, three designers (real model, no Bash, same profile): A with both skills, B with neither, C with the direction above.
+All three avoided the generic look because the profile asked for earth tones; the direction made the difference in
+distinctiveness (C drew the day as a wooden peg rail; B used the usual four stat tiles and numbered steps), in the checker (A 3,
+C 11, B 54 findings, the first two with no real FAIL) and in cost (A read the skills: 288 k tokens and 11 minutes; B 133 k and
+5; C 171 k and 8). One sample per arm: it shows direction, not statistics.
+
 ## [0.9.2] — 2026-11-12 — The orchestrator does not forget to ask for a phase's approval
 
 ### Changed
