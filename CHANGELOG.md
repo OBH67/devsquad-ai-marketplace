@@ -3,6 +3,18 @@
 > From 0.7.0 on, this file is written in English. The entries below it (0.6.1
 > and earlier) keep their original Spanish text.
 
+## [0.9.0] — 2026-11-12 — Mock-ups belong to a feature, and the approved ones go into the BRD
+
+### Changed
+- Mock-ups move from `.devsquad/maquetas/` to **`.devsquad/tracks/<track>/maquetas/`**: they describe the screens of ONE
+  feature, not the whole app. A feature with no screen has none and nothing is blocked. The design approval of a track
+  covers `diseno.md` and that track's mock-ups only: another feature's mock-ups never make it stale.
+- When the person approves the design, **code** adds a section `## Approved designs` (each screen and its file) to
+  `brd.md` so the coder follows them; replaced, not repeated, on a second approval. A BRD approval that was valid is renewed
+  with it (the section is the very design just approved); a BRD that was not approved, or was stale, is left alone: code
+  never blesses text nobody reviewed.
+- The BSA writes the BRD's «Screens» table for this feature only; the designer draws only what the feature adds or changes.
+
 ## [0.8.0] — 2026-11-11 — BRD, HTML mock-ups and two design skills
 
 ### Added
