@@ -95,8 +95,9 @@ face, which is exactly what the person does not want.
    Read (the Read tool shows images) the `-movil-pantalla` and `-escritorio-pantalla` picture of every screen, then the slices
    where the empty and error states are. Judge like a design lead: is this the direction you wrote? does every row of your
    traceability table show on the screen? is anything generic, crowded, cut off, covered (a bar fixed at the bottom over the
-   content), hard to read or too small to tap? Fix it in the HTML and call the tool again; two rounds are enough. The lines it
-   marks "MUST FIX" would make the Factory refuse the design approval. If the tool does not exist (you work in a terminal
+   content), hard to read or too small to tap? Fix it in the HTML and call the tool again. Call it once more after your LAST change: the Factory does
+   not ask the person to approve the design until every mock-up, exactly as it is now, has been drawn for you. The lines it
+   marks "MUST FIX" would also make the Factory refuse the design approval. If the tool does not exist (you work in a terminal
    without the Factory), re-read your HTML against the checklist instead.
 
 # Your process

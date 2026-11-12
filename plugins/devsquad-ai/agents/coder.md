@@ -70,10 +70,11 @@ the person's explicit confirmation.
   mock-up does not show something the story needs (a state, a message),
   stop and report it so the designer adds it and the person approves it —
   never invent it.
-- In the Factory, before the person is asked to approve your finished work, code compares the colours and
-  typefaces declared at `:root` in the mock-ups with the project's styles, and refuses the question if you
-  used another palette or another font (for example the template's). Copying the tokens as they are is what
-  avoids that.
+- In the Factory, before the person is asked to approve your finished work, code compares the mock-ups with
+  the project: the colours and typefaces declared at `:root` must be in its styles, and the texts of the
+  buttons, headings and labels must be in its code. It refuses the question if you used another palette,
+  another font (for example the template's) or other words. Copying the tokens and the texts as they are is
+  what avoids that.
 - Before applying a pattern or convention, if you doubt whether it is still
   the recommended practice in the current version of the language, framework
   or library in use, verify it with WebSearch instead of trusting only what

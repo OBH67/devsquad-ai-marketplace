@@ -3,6 +3,16 @@
 > From 0.7.0 on, this file is written in English. The entries below it (0.6.1
 > and earlier) keep their original Spanish text.
 
+## [0.11.1] — 2026-11-12 — Rules the Factory now enforces by code
+
+### Changed
+- The designer is told that the Factory does not ask the person to approve the design until every mock-up, as it is now, has been drawn
+  for it (`ver_maquetas`); it calls the tool again after its last change.
+- The coder is told that the Factory also compares the texts of the mock-ups' buttons, headings and labels with its code, not only
+  the colours and typefaces.
+- (Factory side, same day: the Factory asks the BRD, architecture and design approvals itself when a session ends without the
+  orchestrator asking; see the Factory's `docs/aprendizaje/34-…`.)
+
 ## [0.11.0] — 2026-11-12 — The designer looks at its own drawing
 
 ### Changed
