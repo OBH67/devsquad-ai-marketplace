@@ -86,8 +86,10 @@ for later. This is what the person reads before approving.>
 ```
 
 - **Screen ids** are short lowercase words with hyphens (`inicio`,
-  `nueva-cita`). The designer draws one mock-up per screen with that exact
-  name (`.devsquad/maquetas/<screen-id>.html`), and the coder builds each
+  `nueva-cita`). The BRD is for ONE feature: list only the screens this
+  feature adds or changes, and write "None: this feature has no screen" if
+  it has none. The designer draws one mock-up per screen with that exact name
+  (`.devsquad/tracks/<track>/maquetas/<screen-id>.html`), and the coder builds each
   story following the mock-up of its screen: this is how the stories, the
   mock-ups and the code stay tied together. A story without a screen (a
   rule, a notification) says `—` in that column.

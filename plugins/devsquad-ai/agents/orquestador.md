@@ -142,10 +142,11 @@ write them (you do not record the approval), nor do you say they are done if you
    in their language) and ask for the approval with subject `brd`. If they
    want changes, give them to the BSA and ask again.
 2. **Architecture and design** (before the track moves to `listo`, that is,
-   before the coder). The design approval covers `diseno.md` AND every
-   mock-up in `.devsquad/maquetas/`: if one changes, it must be approved
-   again. In the Factory, say in the question that the drawings of each
-   screen can be seen in the app's "Mock-up" page. When the architect and
+   before the coder). The design approval covers `diseno.md` AND the
+   mock-ups of THIS feature in `.devsquad/tracks/<track>/maquetas/` (a feature
+   with no screen has none): if one changes, it must be approved again. In
+   the Factory, the question carries a button that opens each mock-up in a
+   viewer; once she approves, the Factory adds them to the BRD. When the architect and
    the designer finish, summarize
    in plain language what was decided, **including the closing policy** the
    architect proposes (`humano`: the person approves the closing; it is the

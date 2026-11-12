@@ -370,16 +370,24 @@ class PruebasHuellaDeComandos(Base):
 
 
 class BrdYMaquetas(Base):
-    """0.8.0: the BSA's BRD needs the person's approval, and the design approval covers every HTML mock-up."""
+    """0.9.0: the BSA's BRD needs the person's approval; mock-ups belong to a feature (a track) and the design approval of
+    that track covers them; the approved mock-ups are added to the BRD."""
+
+    TRACK = "001-inicial"
 
     def E(self):
         sys.path.insert(0, SCRIPTS)
         import devsquad_estado as E
         return E
 
-    def track_aprobado(self):
-        self.track()
-        return self.leer_json("tracks", "001-inicial", "track.json")
+    def maqueta(self, nombre, texto, track=None):
+        self.escribir(("tracks", track or self.TRACK, "maquetas", nombre), texto)
+
+    def borrar_maqueta(self, nombre, track=None):
+        os.remove(self.ruta("tracks", track or self.TRACK, "maquetas", nombre))
+
+    def track_json(self):
+        return self.leer_json("tracks", self.TRACK, "track.json")
 
     def test_sin_aprobar_el_brd_el_track_no_pasa_a_listo(self):
         self.track(aprobar=False)
@@ -391,11 +399,11 @@ class BrdYMaquetas(Base):
         self.estado("transicion", "listo")
 
     def test_si_el_brd_cambia_su_aprobacion_queda_obsoleta(self):
-        track = self.track_aprobado()
-        self.assertEqual(self.E().estado_aprobacion(self.p, track, "brd")[0], "ok")
+        self.track()
+        self.assertEqual(self.E().estado_aprobacion(self.p, self.track_json(), "brd")[0], "ok")
         self.escribir(("brd.md",), "# BRD — Inicial\n\nA new requirement nobody approved.\n")
-        st, det = self.E().estado_aprobacion(self.p, track, "brd")
-        self.assertEqual((st, det), ("obsoleta", "brd.md changed since it was approved"))
+        self.assertEqual(self.E().estado_aprobacion(self.p, self.track_json(), "brd"),
+                         ("obsoleta", "brd.md changed since it was approved"))
 
     def test_un_proyecto_anterior_al_brd_no_necesita_aprobarlo(self):
         self.track(aprobar=False)
@@ -405,57 +413,109 @@ class BrdYMaquetas(Base):
         self.estado("aprobar", "diseno", "--fuente", "terminal")
         self.estado("transicion", "listo")
         self.assertEqual(self.E().documento_de_requisitos(self.p), "requerimientos.md")
-        r = self.estado("aprobar", "brd", "--fuente", "terminal", esperado=1)      # there is no BRD to approve
+        r = self.estado("aprobar", "brd", "--fuente", "terminal", esperado=1)
         self.assertIn("brd.md does not exist", r.stderr)
 
-    def test_sin_maquetas_la_huella_del_diseno_es_la_de_antes(self):
+    def test_una_funcionalidad_sin_pantallas_no_tiene_maquetas_y_su_huella_es_la_del_diseno(self):
         self.track(aprobar=False)
         E = self.E()
-        self.assertEqual(E.huella_documento(self.p, "diseno"), E.sha256_archivo(self.ruta("diseno.md")))
+        self.assertEqual(E.maquetas(self.p, self.TRACK), [])
+        self.assertEqual(E.huella_documento(self.p, "diseno", self.TRACK), E.sha256_archivo(self.ruta("diseno.md")))
+        for o in ("brd", "arquitectura", "diseno"):
+            self.estado("aprobar", o, "--fuente", "terminal")                       # approving needs no mock-up
+        self.assertEqual(E.faltan_aprobaciones_para_listo(self.p, self.track_json()), [])
 
-    def test_la_aprobacion_del_diseno_cubre_cada_maqueta(self):
+    def test_la_aprobacion_del_diseno_cubre_las_maquetas_de_esa_funcionalidad(self):
         self.track(aprobar=False)
-        self.escribir(("maquetas", "inicio.html"), "<!doctype html><title>Inicio</title>")
-        self.escribir(("maquetas", "nueva-cita.html"), "<!doctype html><title>Nueva cita</title>")
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio</title>")
+        self.maqueta("nueva-cita.html", "<!doctype html><title>Nueva cita</title>")
         self.estado("aprobar", "diseno", "--fuente", "factory", "--por", "esposa")
-        track = self.leer_json("tracks", "001-inicial", "track.json")
-        self.assertEqual(track["aprobaciones"]["diseno"]["maquetas"], ["inicio.html", "nueva-cita.html"])
+        self.assertEqual(self.track_json()["aprobaciones"]["diseno"]["maquetas"], ["inicio.html", "nueva-cita.html"])
         E = self.E()
-        self.assertEqual(E.estado_aprobacion(self.p, track, "diseno")[0], "ok")
-        # one character in one mock-up
-        self.escribir(("maquetas", "inicio.html"), "<!doctype html><title>Inicio!</title>")
-        st, det = E.estado_aprobacion(self.p, track, "diseno")
+        self.assertEqual(E.estado_aprobacion(self.p, self.track_json(), "diseno")[0], "ok")
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio!</title>")          # one character in one mock-up
+        st, det = E.estado_aprobacion(self.p, self.track_json(), "diseno")
         self.assertEqual(st, "obsoleta")
         self.assertIn("mock-up", det)
-        self.escribir(("maquetas", "inicio.html"), "<!doctype html><title>Inicio</title>")
-        self.assertEqual(E.estado_aprobacion(self.p, track, "diseno")[0], "ok")
-        # a new screen nobody approved, and a removed one
-        self.escribir(("maquetas", "pagos.html"), "<!doctype html><title>Pagos</title>")
-        self.assertEqual(E.estado_aprobacion(self.p, track, "diseno")[0], "obsoleta")
-        os.remove(self.ruta("maquetas", "pagos.html"))
-        os.remove(self.ruta("maquetas", "nueva-cita.html"))
-        self.assertEqual(E.estado_aprobacion(self.p, track, "diseno")[0], "obsoleta")
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio</title>")
+        self.assertEqual(E.estado_aprobacion(self.p, self.track_json(), "diseno")[0], "ok")
+        self.maqueta("pagos.html", "<!doctype html><title>Pagos</title>")             # a new screen nobody approved
+        self.assertEqual(E.estado_aprobacion(self.p, self.track_json(), "diseno")[0], "obsoleta")
+        self.borrar_maqueta("pagos.html")
+        self.borrar_maqueta("nueva-cita.html")
+        self.assertEqual(E.estado_aprobacion(self.p, self.track_json(), "diseno")[0], "obsoleta")
+
+    def test_las_maquetas_de_otra_funcionalidad_no_afectan_la_aprobacion(self):
+        self.track(aprobar=False)
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio</title>")
+        for o in ("brd", "arquitectura", "diseno"):
+            self.estado("aprobar", o, "--fuente", "terminal")
+        self.maqueta("pagos.html", "<!doctype html><title>Pagos</title>", track="002-pagos")      # another feature
+        self.maqueta("inicio.html", "<!doctype html><title>Otra cosa</title>", track="002-pagos")
+        self.assertEqual(self.E().faltan_aprobaciones_para_listo(self.p, self.track_json()), [])
 
     def test_si_la_maqueta_cambia_el_coder_queda_bloqueado(self):
         self.track(aprobar=False)
-        self.escribir(("maquetas", "inicio.html"), "<!doctype html><title>Inicio</title>")
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio</title>")
         for o in ("brd", "arquitectura", "diseno"):
             self.estado("aprobar", o, "--fuente", "terminal")
-        track = self.leer_json("tracks", "001-inicial", "track.json")
-        self.assertEqual(self.E().faltan_aprobaciones_para_listo(self.p, track), [])
-        self.escribir(("maquetas", "inicio.html"), "<!doctype html><title>Otra cosa</title>")
-        faltas = self.E().faltan_aprobaciones_para_listo(self.p, track)
+        self.assertEqual(self.E().faltan_aprobaciones_para_listo(self.p, self.track_json()), [])
+        self.maqueta("inicio.html", "<!doctype html><title>Otra cosa</title>")
+        faltas = self.E().faltan_aprobaciones_para_listo(self.p, self.track_json())
         self.assertEqual(len(faltas), 1)
-        self.assertTrue(faltas[0].startswith("diseno (diseno.md or a mock-up in maquetas/ changed"))
+        self.assertTrue(faltas[0].startswith("diseno (diseno.md or a mock-up of this feature changed"))
 
     def test_solo_cuentan_los_html_de_la_carpeta_y_no_los_enlaces(self):
         self.track(aprobar=False)
-        self.escribir(("maquetas", "inicio.html"), "<!doctype html>")
-        self.escribir(("maquetas", "notas.txt"), "x")
-        os.makedirs(self.ruta("maquetas", "sub"), exist_ok=True)
-        self.escribir(("maquetas", "sub", "x.html"), "x")
-        os.symlink(self.ruta("diseno.md"), self.ruta("maquetas", "enlace.html"))
-        self.assertEqual(self.E().maquetas(self.p), ["inicio.html"])
+        self.maqueta("inicio.html", "<!doctype html>")
+        self.maqueta("notas.txt", "x")
+        self.maqueta(os.path.join("sub", "x.html"), "x")
+        os.symlink(self.ruta("diseno.md"), self.ruta("tracks", self.TRACK, "maquetas", "enlace.html"))
+        self.assertEqual(self.E().maquetas(self.p, self.TRACK), ["inicio.html"])
+
+    # --- the approved mock-ups go into the BRD (Omar, 2026-11-12) ---
+    def test_al_aprobar_el_diseno_las_maquetas_se_agregan_al_brd_y_su_aprobacion_se_renueva(self):
+        self.track(aprobar=False)
+        self.estado("aprobar", "brd", "--fuente", "terminal", "--por", "Ana")
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio</title>")
+        self.maqueta("nueva-cita.html", "<!doctype html><title>Nueva cita</title>")
+        r = self.estado("aprobar", "diseno", "--fuente", "factory", "--por", "esposa")
+        self.assertIn("added to brd.md", r.stdout)
+        self.assertIn("BRD approval was renewed", r.stdout)
+        with open(self.ruta("brd.md"), encoding="utf-8") as f:
+            brd = f.read()
+        self.assertIn("## Approved designs", brd)
+        self.assertIn("| inicio | `.devsquad/tracks/001-inicial/maquetas/inicio.html` |", brd)
+        self.assertIn("| nueva-cita | `.devsquad/tracks/001-inicial/maquetas/nueva-cita.html` |", brd)
+        reg = self.track_json()["aprobaciones"]["brd"]
+        self.assertEqual((reg["por"], reg["via"]), ("esposa", "diseno"))
+        self.assertEqual(self.E().estado_aprobacion(self.p, self.track_json(), "brd")[0], "ok")      # still valid
+        self.estado("aprobar", "diseno", "--fuente", "factory", "--por", "esposa")                  # again: replaced, not repeated
+        with open(self.ruta("brd.md"), encoding="utf-8") as f:
+            self.assertEqual(f.read().count("## Approved designs"), 1)
+
+    def test_un_brd_sin_aprobar_no_recibe_una_aprobacion_por_agregarle_los_disenos(self):
+        self.track(aprobar=False)
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio</title>")
+        self.estado("aprobar", "diseno", "--fuente", "factory", "--por", "esposa")
+        with open(self.ruta("brd.md"), encoding="utf-8") as f:
+            self.assertIn("## Approved designs", f.read())
+        self.assertNotIn("brd", self.track_json()["aprobaciones"])                                  # code never blesses it
+        r = self.estado("aprobar", "brd", "--fuente", "terminal", "--por", "Ana")
+        self.assertEqual(self.E().estado_aprobacion(self.p, self.track_json(), "brd")[0], "ok")
+
+    def test_un_brd_obsoleto_no_se_renueva_al_agregarle_los_disenos(self):
+        self.track()
+        self.escribir(("brd.md",), "# BRD — Inicial\n\nChanged after the approval.\n")
+        self.maqueta("inicio.html", "<!doctype html><title>Inicio</title>")
+        self.estado("aprobar", "diseno", "--fuente", "factory", "--por", "esposa")
+        self.assertEqual(self.E().estado_aprobacion(self.p, self.track_json(), "brd")[0], "obsoleta")
+
+    def test_sin_maquetas_el_brd_no_se_toca(self):
+        self.track(aprobar=False)
+        antes = open(self.ruta("brd.md"), encoding="utf-8").read()
+        self.estado("aprobar", "diseno", "--fuente", "factory", "--por", "esposa")
+        self.assertEqual(open(self.ruta("brd.md"), encoding="utf-8").read(), antes)
 
 
 if __name__ == "__main__":

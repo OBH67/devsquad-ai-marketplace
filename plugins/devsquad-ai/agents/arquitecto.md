@@ -191,7 +191,7 @@ stays blocked by the gates.
 4. Each task must be small (fits in one commit), verifiable and ordered
    according to its dependencies; relate it to the story it covers by its
    BRD id (`US-3`). A task that builds a screen names that screen's mock-up,
-   `.devsquad/maquetas/<screen-id>.html` with the screen id of the BRD (the
+   `.devsquad/tracks/<track>/maquetas/<screen-id>.html` with the screen id of the BRD (the
    designer draws it after you; the coder must follow it exactly). Include
    the testing tasks.
 5. Never mark a task as done (`[x]`) nor add commits: the coder does that

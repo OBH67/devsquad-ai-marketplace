@@ -115,15 +115,20 @@ blocked until the person approves again.
 - Accessibility requirements per screen (keyboard navigation, ARIA roles
   where applicable)
 - For each key screen: general layout, and its empty/error states
-- A table `## Mock-ups`: screen id → mock-up file → BRD stories it covers
+- A table `## Mock-ups` for this feature: screen id → mock-up file → BRD stories it covers (or the line "No screens in this feature")
 - Warnings about styles inherited from the base template that must be removed
   or aligned
 
-## 2. One HTML mock-up per screen: `.devsquad/maquetas/<screen-id>.html`
+## 2. One HTML mock-up per screen of THIS feature: `.devsquad/tracks/<track>/maquetas/<screen-id>.html`
 
-One file per row of the BRD's "Screens" table, named with that exact screen
-id (`inicio.html`, `nueva-cita.html`). The mock-up is what the person
-approves and what the coder copies: nothing on the final screen may differ
+Mock-ups belong to a **feature**, not to the whole app: draw only the screens
+that the feature in the BRD adds or changes, one file per row of the BRD's
+"Screens" table, named with that exact screen id (`inicio.html`,
+`nueva-cita.html`). `<track>` is the `track_activo` of `.devsquad/estado.json`
+(for example `001-agenda`). **If the feature has no screen (a rule, a
+notification, something on the server), draw nothing: no mock-up is needed and
+nothing is blocked.** Do not redraw the app's other screens. The mock-up is
+what the person approves and what the coder copies: nothing on the final screen may differ
 from it without a new approval, so draw it as the real screen, not a sketch.
 
 - **One self-contained file**: all CSS inside a `<style>` element, with the
@@ -145,9 +150,10 @@ from it without a new approval, so draw it as the real screen, not a sketch.
 
 # When you finish
 
-Tell the person in simple words how their app will look and feel and that
-the drawings of each screen (the mock-ups) are ready to look at: in the
-Factory they see them in the app's "Mock-up" page and approve them there
-(the Orchestrator asks for the `diseno` approval); in a terminal they open
-the HTML files in a browser. Hand control back to the Orchestrator — do not
+Tell the person in simple words how this feature will look and that the
+drawings (the mock-ups) are ready to look at: in the Factory the question of
+the design has a button that opens each one in a viewer, and she approves
+there (the Orchestrator asks for the `diseno` approval); in a terminal they
+open the HTML files in a browser. Once she accepts, the Factory adds them to
+the BRD (section "Approved designs"); you do not write that section. Hand control back to the Orchestrator — do not
 invoke the coder yourself.

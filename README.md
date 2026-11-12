@@ -117,7 +117,7 @@ versioned in Git**: it is the project's memory (do not add it to
 - `perfil.md` — your profile (technical level, language, preferences, declared
   stack and protected files).
 - `brd.md` — the BRD the BSA wrote and the person approved (`requerimientos.md` in a project started before 0.8.0).
-- `maquetas/<screen-id>.html` — the designer's mock-up of each screen; approved together with `diseno.md`.
+- `tracks/<track>/maquetas/<screen-id>.html` — the designer's mock-ups of that feature (none if it has no screen); approved with `diseno.md` and then added to the BRD (section "Approved designs").
 - `arquitectura.md` — what the Architect defined.
 - `diseno.md` — what the Designer defined.
 - `estado.md` — the previous format; 0.6.0 replaced it with `estado.json` and
@@ -178,7 +178,7 @@ Factory), never by the model:
 |---|---|---|
 | BRD (before the architect starts) | `/devsquad-ai:aprobar brd` | `subject: "brd"` |
 | Architecture | `/devsquad-ai:aprobar arquitectura` | `ask_human` with `kind: "approval"`, `subject: "arquitectura"` |
-| Design (diseno.md and every mock-up) | `/devsquad-ai:aprobar diseno` | `subject: "diseno"` |
+| Design (diseno.md and the feature's mock-ups) | `/devsquad-ai:aprobar diseno` | `subject: "diseno"` |
 | The profile's verification commands | `/devsquad-ai:aprobar comandos` | `subject: "comandos"` |
 | Closing the track | `/devsquad-ai:aprobar cierre` | `subject: "cierre"` |
 | Cancel a track | `/devsquad-ai:cancelar <reason>` | `ask_human` with `kind: "cancel"` |

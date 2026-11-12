@@ -23,7 +23,8 @@ Arguments received: $ARGUMENTS
   approved if you did not see the hook's result.
 
 Objects: `brd`, `arquitectura` and `diseno` (the documents as they are now,
-and for `diseno` also every mock-up in `.devsquad/maquetas/`; if they change
+and for `diseno` also the mock-ups of that feature in
+`.devsquad/tracks/<track>/maquetas/` (once approved they are added to the BRD); if they change
 afterwards, they must be approved again), `comandos` (the profile's
 verification commands), `cierre` (the track's closing, tied to the exact
 commit).

@@ -72,9 +72,12 @@ APROBACIONES_PARA_LISTO = ("brd", "arquitectura", "diseno")
 # 0.8.0: the BSA writes a BRD (`brd.md`). A project started before keeps its `requerimientos.md`: it needs no BRD
 # approval (that phase was already done the old way) and every phase accepts it in place of the BRD.
 REQUISITOS_ANTIGUOS = "requerimientos.md"
-# 0.8.0: the designer delivers one HTML mock-up per key screen here. The design approval covers diseno.md AND every
-# mock-up: if any of them changes, the approval is stale and the coder stops until the person approves again.
+# 0.9.0: mock-ups belong to a FEATURE (a track), not to the whole app: the designer delivers one HTML mock-up per screen
+# THE FEATURE needs in `.devsquad/tracks/<track>/maquetas/`; a feature with no screen has none. The design approval of a
+# track covers diseno.md AND that track's mock-ups: if one changes, the approval is stale and the coder stops until the
+# person approves again. Mock-ups of other tracks never affect it.
 DIR_MAQUETAS = "maquetas"
+TITULO_DISENOS_APROBADOS = "## Approved designs"
 RAIZ_PLUGIN = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PERFIL = os.path.join(DIR_ESTADO, "perfil.md")
 
@@ -352,9 +355,15 @@ def documento_de_requisitos(raiz):
     return REQUISITOS_ANTIGUOS if es_proyecto_antiguo(raiz) else "brd.md"
 
 
-def maquetas(raiz):
-    """Sorted names of the HTML mock-ups in .devsquad/maquetas/ (only regular .html files directly inside it)."""
-    d = os.path.join(raiz, DIR_ESTADO, DIR_MAQUETAS)
+def dir_maquetas(raiz, track_id):
+    return os.path.join(raiz, DIR_ESTADO, "tracks", track_id, DIR_MAQUETAS)
+
+
+def maquetas(raiz, track_id):
+    """Sorted names of the HTML mock-ups of one track (only regular .html files directly inside its folder)."""
+    if not track_id:
+        return []
+    d = dir_maquetas(raiz, track_id)
     try:
         nombres = os.listdir(d)
     except OSError:
@@ -363,21 +372,46 @@ def maquetas(raiz):
                   and os.path.isfile(os.path.join(d, n)))
 
 
-def huella_documento(raiz, objeto):
+def huella_documento(raiz, objeto, track_id=None):
     """The fingerprint an approval of `objeto` is tied to, or None if the document does not exist.
 
-    For `diseno` with mock-ups it covers diseno.md and every mock-up (name and content); without mock-ups it is the plain
-    sha256 of diseno.md, the same as before 0.8.0, so an approval given then is still valid."""
+    For `diseno` with mock-ups it covers diseno.md and every mock-up OF THAT TRACK (name and content); without mock-ups it
+    is the plain sha256 of diseno.md."""
     principal = sha256_archivo(os.path.join(raiz, DIR_ESTADO, DOCUMENTOS[objeto]))
     if principal is None or objeto != "diseno":
         return principal
-    nombres = maquetas(raiz)
+    nombres = maquetas(raiz, track_id)
     if not nombres:
         return principal
     h = hashlib.sha256(("diseno.md\0%s\n" % principal).encode("utf-8"))
     for n in nombres:
-        h.update(("%s/%s\0%s\n" % (DIR_MAQUETAS, n, sha256_archivo(os.path.join(raiz, DIR_ESTADO, DIR_MAQUETAS, n)))).encode("utf-8"))
+        h.update(("%s/%s\0%s\n" % (DIR_MAQUETAS, n, sha256_archivo(os.path.join(dir_maquetas(raiz, track_id), n)))).encode("utf-8"))
     return h.hexdigest()
+
+
+def anotar_disenos_en_el_brd(raiz, track_id):
+    """When the person approves the design, its mock-ups are added to the BRD so the coder follows them (Omar, 2026-11-12):
+    a section «## Approved designs» listing each screen and its file. Written by code, never by an agent, and replaced (not
+    repeated) if the design is approved again. Returns True if brd.md changed."""
+    nombres = maquetas(raiz, track_id)
+    ruta = os.path.join(raiz, DIR_ESTADO, "brd.md")
+    if not nombres or not os.path.isfile(ruta):
+        return False
+    with open(ruta, encoding="utf-8") as f:
+        texto = f.read()
+    lineas = [TITULO_DISENOS_APROBADOS, "",
+              "The person approved these mock-ups for this feature. The coder builds each screen exactly as its file shows; "
+              "anything the mock-up does not show is asked first, never invented.", "",
+              "| Screen id | Mock-up file |", "| --- | --- |"]
+    lineas += ["| %s | `.devsquad/tracks/%s/%s/%s` |" % (n[:-5], track_id, DIR_MAQUETAS, n) for n in nombres]
+    bloque = "\n".join(lineas) + "\n"
+    previo = re.search(r"^## Approved designs\s*$.*?(?=^## |\Z)", texto, re.MULTILINE | re.DOTALL)
+    nuevo = (texto[:previo.start()] + bloque + ("\n" + texto[previo.end():] if texto[previo.end():].strip() else "")) if previo \
+        else texto.rstrip("\n") + "\n\n" + bloque
+    if nuevo == texto:
+        return False
+    escribir_atomico(ruta, nuevo)
+    return True
 
 
 def estado_aprobacion(raiz, track, objeto, estado=None):
@@ -399,8 +433,8 @@ def estado_aprobacion(raiz, track, objeto, estado=None):
         if git_head(raiz) != reg.get("commit"):
             return "obsoleta", "there are new commits since the approval (approved at %s)" % str(reg.get("commit"))[:7]
         return "ok", ""
-    if huella_documento(raiz, objeto) != reg.get("sha256"):
-        que = "diseno.md or a mock-up in maquetas/" if objeto == "diseno" and (maquetas(raiz) or reg.get("maquetas")) else DOCUMENTOS[objeto]
+    if huella_documento(raiz, objeto, track.get("id")) != reg.get("sha256"):
+        que = "diseno.md or a mock-up of this feature" if objeto == "diseno" and (maquetas(raiz, track.get("id")) or reg.get("maquetas")) else DOCUMENTOS[objeto]
         return "obsoleta", "%s changed since it was approved" % que
     return "ok", ""
 
@@ -666,12 +700,12 @@ def cmd_aprobar(a, raiz):
     aviso = ""
     if a.objeto in DOCUMENTOS:
         ruta_doc = os.path.join(raiz, DIR_ESTADO, DOCUMENTOS[a.objeto])
-        huella = huella_documento(raiz, a.objeto)
+        huella = huella_documento(raiz, a.objeto, track_id)
         if huella is None:
             raise ReglaError("%s/%s does not exist: there is nothing to approve yet." % (DIR_ESTADO, DOCUMENTOS[a.objeto]))
         registro["sha256"] = huella
-        if a.objeto == "diseno" and maquetas(raiz):
-            registro["maquetas"] = maquetas(raiz)
+        if a.objeto == "diseno" and maquetas(raiz, track_id):
+            registro["maquetas"] = maquetas(raiz, track_id)
         if a.objeto == "arquitectura":
             with open(ruta_doc, encoding="utf-8") as f:
                 politica = politica_en_documento(f.read())
@@ -694,6 +728,17 @@ def cmd_aprobar(a, raiz):
             raise ReglaError("The closing approval is tied to the exact commit and there is no Git repository with commits in %s." % raiz)
         registro["commit"] = head
     track.setdefault("aprobaciones", {})[a.objeto] = registro
+    if a.objeto == "diseno":
+        # The approved mock-ups are added to the BRD (Omar, 2026-11-12). A BRD approval that was valid stays valid: this
+        # section is the very design the person just approved, written by code. A BRD that was NOT approved (or was stale)
+        # is left as it is: code never blesses text nobody reviewed.
+        valida = estado_aprobacion(raiz, track, "brd")[0] == "ok" and not es_proyecto_antiguo(raiz)
+        if anotar_disenos_en_el_brd(raiz, track_id):
+            aviso += " The approved mock-ups were added to brd.md."
+            if valida:
+                track["aprobaciones"]["brd"] = {"fuente": registro["fuente"], "por": registro["por"], "fecha": registro["fecha"],
+                                                "sha256": huella_documento(raiz, "brd", track_id), "via": "diseno"}
+                aviso += " The BRD approval was renewed with it."
     guardar_track(raiz, track)
     print("Approval of %s recorded for track %s (source: %s, by: %s).%s"
           % (a.objeto, track_id, registro["fuente"], registro["por"], aviso))
