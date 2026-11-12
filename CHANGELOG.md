@@ -3,6 +3,17 @@
 > From 0.7.0 on, this file is written in English. The entries below it (0.6.1
 > and earlier) keep their original Spanish text.
 
+## [0.11.0] — 2026-11-12 — The designer looks at its own drawing
+
+### Changed
+- The designer calls the Factory's `ver_maquetas` tool after drawing: a real browser (Chromium on the VM) draws every mock-up of the
+  feature on a 390 px phone and a 1280 px desktop, the pictures are written inside the project and the designer reads them as
+  images, with what the browser measured (the page scrolls sideways, text cut at the edge, controls under 44 px, text under 14 px).
+  It looks, fixes and draws again (two rounds). Until now it drew blind: the three designers of the 0.10.0 test all said so.
+- The Factory refuses the design approval while a mock-up scrolls sideways or cuts text on a phone (needs the browser; without it
+  the approval is not blocked).
+- In a terminal without the Factory the tool does not exist and the designer re-reads its HTML against the checklist.
+
 ## [0.10.0] — 2026-11-12 — A design direction instead of a style catalog
 
 ### Removed
